@@ -533,7 +533,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 // ============================================================
 // ★ここにGAS Web AppのURLを貼る（後述のステップで取得）
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyssQCwDrg54ErhAme1xS3v2ltx_tWjCgD0Lst4dA6-RaU3QZuGPnQ-NWvOnKQqxdaK/exec';
-
+const JSON_FILE_ID = '1LuOcMqZqrX4HFF-Lmk43ycrS0GqOlZrK';
 // ============================================================
 // 状態管理
 // ============================================================
@@ -615,12 +615,14 @@ function closeAudioModal() {
 async function loadInitialData() {
   showLoading(true);
   try {
-    const [songs, master] = await Promise.all([
-      callGAS('apiGetAllSongs'),
-      callGAS('apiGetInstrumentMaster'),
-    ]);
-    State.songs = songs || [];
-    State.masterData = master || { categories: [], instruments: [] };
+    // DriveのJSONファイルを直接fetch（GASを経由しないので速い）
+    const url = `https://drive.google.com/uc?export=download&id=${JSON_FILE_ID}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('JSONファイルの取得に失敗しました');
+    const data = await res.json();
+
+    State.songs = data.songs || [];
+    State.masterData = data.master || { categories: [], instruments: [] };
     State.masterCategories = JSON.parse(JSON.stringify(State.masterData.categories));
     State.masterInstruments = JSON.parse(JSON.stringify(State.masterData.instruments));
     applyFilters();

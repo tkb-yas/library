@@ -615,10 +615,8 @@ function closeAudioModal() {
 async function loadInitialData() {
   showLoading(true);
   try {
-    // DriveのJSONファイルを直接fetch（GASを経由しないので速い）
-    const url = `https://drive.google.com/uc?export=download&id=${JSON_FILE_ID}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('JSONファイルの取得に失敗しました');
+    const res = await fetch(GAS_URL + '?action=data');
+    if (!res.ok) throw new Error('データの取得に失敗しました');
     const data = await res.json();
 
     State.songs = data.songs || [];

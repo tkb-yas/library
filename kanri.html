@@ -2,10 +2,19 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <script>
-    // index.htmlに?token=claudeつきでリダイレクトするだけ
-    window.location.replace('./index.html?token=claude');
-  </script>
+  <title>管理モード</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    iframe {
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      display: block;
+    }
+  </style>
 </head>
-<body></body>
+<body>
+  <iframe src="./index.html?token=claude"></iframe>
+</body>
+</html>
 </html>

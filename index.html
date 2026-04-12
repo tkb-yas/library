@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>徳備 康純 作品リスト / List of Works by TOKUBI, Yasuzumi</title>
+<style>
+  /* ============================================================
+     CSS変数・リセット
+  ============================================================ */
+  :root {
+    --bg: #f8f7f4;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: #ddd9d0;
+    --text: #2c2a26;
+    --text-sub: #7a7568;
+    --accent: #5a6e4a;
+    --accent-light: #eef2eb;
+    --accent-hover: #4a5e3a;
+    --danger: #c0392b;
+    --danger-light: #fdf0ee;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --radius: 8px;
+  }
+/* 管理モード用ベースカラー上書き */
+body.admin-mode {
+  --bg: #f4f4f8;
+  --surface: #ffffff;
+  --surface2: #eeecf5;
+  --border: #d0cce0;
+  --accent: #5a4a8a;
+  --accent-light: #f0ecfa;
+  --accent-hover: #4a3a7a;
+}
+
+/* 虹色発光アニメーション */
+@keyframes rainbow {
+  0%   { color: #e74c3c; text-shadow: 0 0 8px #e74c3c; }
+  16%  { color: #e67e22; text-shadow: 0 0 8px #e67e22; }
+  33%  { color: #f1c40f; text-shadow: 0 0 8px #f1c40f; }
+  50%  { color: #2ecc71; text-shadow: 0 0 8px #2ecc71; }
+  66%  { color: #3498db; text-shadow: 0 0 8px #3498db; }
+  83%  { color: #9b59b6; text-shadow: 0 0 8px #9b59b6; }
+  100% { color: #e74c3c; text-shadow: 0 0 8px #e74c3c; }
+}
+.rainbow {
+  animation: rainbow 2s linear infinite;
+  font-weight: 700;
+}
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 15px; line-height: 1.6; }
+  button { cursor: pointer; font-family: inherit; font-size: 14px; border: none; border-radius: var(--radius); padding: 7px 16px; transition: background 0.15s, opacity 0.15s; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  input, select, textarea { font-family: inherit; font-size: 14px; border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; width: 100%; background: var(--surface); color: var(--text); }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ============================================================
+     ヘッダー
+  ============================================================ */
+#header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+#header-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+ box-sizing: border-box;
+}
+
+#header h1 { font-size: 15px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #header h1 span { display: none; }
+  .lang-btn { background: var(--surface2); color: var(--text); padding: 5px 12px; border: 1px solid var(--border); }
+  .lang-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .mode-indicator { font-size: 12px; background: var(--accent-light); color: var(--accent); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--accent); }
+  .mode-indicator.admin { background: #fff8e8; color: #8a6500; border-color: #c8a800; }
+
+  /* ============================================================
+     タブナビ
+  ============================================================ */
+#tabnav {
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+#tabnav-inner {
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px 0;
+  max-width: 1100px;
+  margin: 0 auto;
+  overflow-x: auto;
+
+  .tab { background: none; border-radius: var(--radius) var(--radius) 0 0; border: 1px solid transparent; border-bottom: none; padding: 7px 14px; color: var(--text-sub); font-size: 13px; white-space: nowrap; }
+}
+  /* ============================================================
+     メインコンテンツ
+  ============================================================ */
+  #main { padding: 16px; max-width: 1100px; margin: 0 auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* カード */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+
+  /* ボタン種別 */
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover:not(:disabled) { background: var(--border); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover:not(:disabled) { background: #a93226; }
+  .btn-sm { padding: 4px 10px; font-size: 13px; }
+  .btn-icon { padding: 5px 8px; font-size: 16px; background: none; border: 1px solid var(--border); }
+  .btn-icon:hover { background: var(--surface2); }
+
+  /* フォーム */
+  .form-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+  .form-row label { font-size: 13px; color: var(--text-sub); margin-bottom: 4px; display: block; }
+  .form-group { flex: 1; }
+  .form-group.fixed-120 { flex: 0 0 120px; }
+  .form-group.fixed-200 { flex: 0 0 200px; }
+
+  /* ============================================================
+     検索エリア
+  ============================================================ */
+  #search-area { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
+  #search-text { flex: 1; min-width: 200px; }
+  .filter-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .filter-tag { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 20px; padding: 3px 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .filter-tag button { background: none; padding: 0; color: var(--accent); font-size: 14px; line-height: 1; }
+
+  /* ============================================================
+     楽曲一覧テーブル
+  ============================================================ */
+  .song-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  body:not(.admin-mode) .song-table-wrap { overflow-x: visible; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  body:not(.admin-mode) table { font-size: 13px; }
+  th { background: var(--surface2); color: var(--text-sub); font-weight: 600; font-size: 12px; padding: 8px 6px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 13px; }
+  body:not(.admin-mode) th { padding: 8px 4px; font-size: 11px; }
+  body:not(.admin-mode) td { padding: 8px 4px; font-size: 12px; }
+
+  /* ============================================================
+     詳細モーダル
+  ============================================================ */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; padding: 12px; }
+  .modal-overlay.open { display: flex; }
+  .modal-overlay#modal-audio { z-index: 300; }
+  .modal { background: var(--surface); border-radius: 12px; padding: 20px; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+  .modal-title { flex: 1; font-size: 17px; font-weight: 700; min-width: 0; overflow: hidden; }
+  .detail-grid { display: grid; grid-template-columns: 100px 1fr; gap: 8px 12px; }
+  .detail-label { color: var(--text-sub); font-size: 12px; padding-top: 2px; }
+  .detail-value { font-size: 14px; }
+
+  /* ============================================================
+     楽器入力UI
+  ============================================================ */
+  .instrument-editor { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .category-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 12px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .cat-btn { background: var(--surface); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+  .cat-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .instrument-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; min-height: 80px; }
+  .instr-btn { background: var(--surface); border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+  .instr-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .instr-btn.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* 楽器リスト（ドラッグ並び替え） */
+  .instrument-list { list-style: none; }
+  .instrument-list-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 6px; cursor: default;
+  }
+  .instrument-list-item.dragging { opacity: 0.4; }
+  .drag-handle { cursor: grab; color: var(--text-sub); font-size: 18px; padding: 0 4px; }
+  .drag-handle:active { cursor: grabbing; }
+  .instr-name { flex: 1; font-size: 14px; }
+  .parts-input { width: 60px; text-align: center; }
+
+  /* ============================================================
+     楽器マスター編集
+  ============================================================ */
+  .master-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+  .master-cat-list { list-style: none; }
+  .master-cat-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 6px;
+    background: var(--surface); cursor: pointer;
+  }
+  .master-cat-item.selected { border-color: var(--accent); background: var(--accent-light); }
+  .master-cat-item .drag-handle { font-size: 16px; }
+  .master-instr-list { list-style: none; }
+  .master-instr-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 6px;
+    background: var(--surface);
+  }
+
+  /* ============================================================
+     音源モーダル用スタイル
+  ============================================================ */
+  .audio-list-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 6px;
+  }
+  .audio-list-item a { flex: 1; font-size: 14px; word-break: break-all; }
+
+  /* ============================================================
+     inbox
+  ============================================================ */
+  .inbox-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); }
+  .inbox-item.checked { background: var(--accent-light); border-color: var(--accent); }
+  .inbox-name { flex: 1; font-size: 14px; }
+  .inbox-date { font-size: 12px; color: var(--text-sub); }
+
+  /* ============================================================
+     ローディング・トースト
+  ============================================================ */
+  #loading { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 500; align-items: center; justify-content: center; }
+  #loading.show { display: flex; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: #fff; padding: 12px 20px; border-radius: var(--radius); font-size: 14px; z-index: 600; display: none; box-shadow: var(--shadow); }
+  #toast.show { display: block; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* レスポンシブ */
+@media (max-width: 640px) {
+  #main { padding: 10px; }
+  body:not(.admin-mode) #main { max-width: 100%; padding: 8px; }
+  body:not(.admin-mode) #header-inner { max-width: 100%; }
+  body:not(.admin-mode) #tabnav-inner { max-width: 100%; }
+  body:not(.admin-mode) .modal { max-width: 100%; }
+  .master-layout { grid-template-columns: 1fr; }
+  .form-row { flex-direction: column; }
+  .form-group.fixed-120, .form-group.fixed-200 { flex: 1; }
+  .card { padding: 14px; }
+  body:not(.admin-mode) .card { padding: 10px; }
+  .modal { padding: 14px; }
+  .pill { font-size: 11px; padding: 1px 6px; }
+  /* ヘッダー小型化 */
+  #header h1 { font-size: 12px; }
+  .lang-btn { padding: 3px 7px; font-size: 12px; }
+  .mode-indicator { font-size: 11px; padding: 3px 7px; }
+}
+  th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { background: var(--border); }
+.sort-icon { font-size: 10px; color: var(--text-sub); margin-left: 2px; }
+th.sort-asc .sort-icon::after { content: '▲'; }
+th.sort-desc .sort-icon::after { content: '▼'; }
+</style>
+</head>
+<body>
+
+<!-- ローディング -->
+<div id="loading"><div class="spinner"></div></div>
+<!-- トースト -->
+<div id="toast"></div>
+
+<!-- ヘッダー -->
+<div id="header">
+  <div id="header-inner">
+    <h1 id="site-title">徳備 康純 作品リスト / List of Works by TOKUBI, Yasuzumi <span id="composer-name"></span></h1>
+    <div>
+      <button class="lang-btn active" id="btn-ja" onclick="setLang('ja')">JP</button>
+      <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+    <div class="mode-indicator" id="mode-label">閲覧モード</div>
+  </div>
+</div>
+
+<!-- タブナビ -->
+<div id="tabnav">
+  <div id="tabnav-inner">
+    <button class="tab active" onclick="showPage('songs')" id="tab-songs" data-ja="楽曲一覧" data-en="Works">楽曲一覧</button>
+    <button class="tab" onclick="showPage('inbox')" id="tab-inbox" data-ja="新規取込" data-en="Import" style="display:none">新規取込</button>
+    <button class="tab" onclick="showPage('instruments')" id="tab-instruments" data-ja="楽器マスター" data-en="Instruments" style="display:none">楽器マスター</button>
+  </div>
+</div>
+
+<!-- メインコンテンツ -->
+<div id="main">
+
+  <!-- ========== 楽曲一覧ページ ========== -->
+  <div class="page active" id="page-songs">
+    <div class="card">
+      <div id="search-area">
+        <div class="form-group" style="flex:1; min-width:200px;">
+          <input type="text" id="search-text" placeholder="曲名で検索 / Search by title" oninput="applyFilters()">
+        </div>
+        <button class="btn-secondary" onclick="toggleAdvSearch()" id="btn-adv-search">絞り込み ▾</button>
+        <button class="btn-primary" onclick="openEditModal(null)" id="btn-add-song" style="display:none">+ 追加</button>
+      </div>
+
+      <!-- 詳細絞り込み（初期非表示） -->
+      <div id="adv-search" style="display:none; border-top:1px solid var(--border); padding-top:14px; margin-top:4px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label id="lbl-filter-year">作曲年</label>
+            <div style="display:flex; gap:8px;">
+              <input type="number" id="filter-year-from" placeholder="from" style="width:90px" oninput="applyFilters()">
+              <span style="line-height:36px">〜</span>
+              <input type="number" id="filter-year-to" placeholder="to" style="width:90px" oninput="applyFilters()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label id="lbl-filter-status">ステータス</label>
+            <select id="filter-status" onchange="applyFilters()">
+              <option value="">すべて / All</option>
+              <option value="公開">公開 / Public</option>
+              <option value="非公開">非公開 / Private</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 楽器絞り込み -->
+        <div style="margin-top:8px;">
+          <label id="lbl-filter-instruments" style="font-size:13px; color:var(--text-sub); margin-bottom:6px; display:block">使用楽器（全て含む）/ Instruments (all selected)</label>
+          <div id="filter-instrument-editor" class="instrument-editor">
+            <div class="category-tabs" id="filter-cat-tabs"></div>
+            <div class="instrument-grid" id="filter-instr-grid"></div>
+          </div>
+          <div class="filter-tags" id="filter-instr-tags" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 楽曲テーブル -->
+    <div class="card">
+      <div class="song-table-wrap">
+        <table id="songs-table">
+          <thead>
+            <tr id="bulk-action-row" style="display:none">
+              <td colspan="8" style="padding:8px 12px; background:var(--accent-light);">
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                  <span id="bulk-count" style="font-size:13px; color:var(--text-sub);"></span>
+                  <button class="btn-primary btn-sm" onclick="bulkSetStatus('公開')">✓ 公開にする</button>
+                  <button class="btn-secondary btn-sm" onclick="bulkSetStatus('非公開')">✗ 非公開にする</button>
+                  <button class="btn-secondary btn-sm" onclick="clearSelection()">選択解除</button>
+                </div>
+              </td>
+            <tr>
+              <th id="th-check" style="display:none; width:36px;">
+                <input type="checkbox" id="check-all" onchange="toggleCheckAll(this.checked)" title="全選択">
+              </th>
+              <th data-ja="曲名" data-en="Title" class="sortable" onclick="setSortColumn('title')">曲名 <span class="sort-icon" id="sort-icon-title"></span></th>
+              <th data-ja="作曲年" data-en="Year" class="sortable" onclick="setSortColumn('year')">作曲年 <span class="sort-icon" id="sort-icon-year"></span></th>
+              <th data-ja="編成" data-en="Ensemble" class="sortable" onclick="setSortColumn('ensemble')">編成 <span class="sort-icon" id="sort-icon-ensemble"></span></th>
+              <th data-ja="パート" data-en="Parts" class="sortable" onclick="setSortColumn('parts')">パート <span class="sort-icon" id="sort-icon-parts"></span></th>
+              <th id="th-status" data-ja="ステータス" data-en="Status" class="sortable" onclick="setSortColumn('status')" style="display:none">ステータス <span class="sort-icon" id="sort-icon-status"></span></th>
+              <th data-ja="音源" data-en="Audio" class="sortable" onclick="setSortColumn('audio')">♪ <span class="sort-icon" id="sort-icon-audio"></span></th>
+              <th id="th-actions" style="display:none"></th>
+            </tr>
+          </thead>
+          <tbody id="songs-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="songs-empty" style="display:none">
+          <p id="empty-msg">データがありません</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 新規取込ページ（管理者のみ） ========== -->
+  <div class="page" id="page-inbox">
+    <div class="card" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <button class="btn-primary" onclick="doScan()">① Driveをスキャン</button>
+      <button class="btn-primary" onclick="doImport()">② チェック済みをインポート</button>
+      <button class="btn-secondary" onclick="doIgnore()">選択を無視リストへ</button>
+      <span id="inbox-count" style="color:var(--text-sub); font-size:13px;"></span>
+    </div>
+    <div class="card">
+      <div id="inbox-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== 楽器マスターページ（管理者のみ） ========== -->
+  <div class="page" id="page-instruments">
+    <div class="card" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
+      <button class="btn-primary" onclick="saveMaster()">保存</button>
+      <span style="color:var(--text-sub); font-size:13px;">カテゴリ・楽器を追加・並び替えしてから保存してください</span>
+    </div>
+    <div class="master-layout">
+      <!-- カテゴリ列 -->
+      <div>
+        <div style="font-weight:600; margin-bottom:10px; font-size:14px;">カテゴリ</div>
+        <ul class="master-cat-list" id="master-cat-list"></ul>
+        <button class="btn-secondary" style="width:100%; margin-top:8px;" onclick="addCategory()">+ カテゴリを追加</button>
+      </div>
+      <!-- 楽器列 -->
+      <div>
+        <div style="font-weight:600; margin-bottom:10px; font-size:14px;" id="master-instr-title">楽器（カテゴリを選択してください）</div>
+        <ul class="master-instr-list" id="master-instr-list"></ul>
+        <button class="btn-secondary" style="margin-top:8px;" onclick="addInstrument()" id="btn-add-instr" disabled>+ 楽器を追加</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#main -->
+
+<!-- ========== 音源モーダル ========== -->
+<div class="modal-overlay" id="modal-audio">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title" id="audio-modal-title">音源一覧</div>
+      <button class="modal-close" onclick="closeAudioModal()">✕</button>
+    </div>
+    <ul class="instrument-list" id="audio-list"></ul>
+    <div style="margin-top:16px; text-align:right;">
+      <button class="btn-secondary btn-sm" onclick="closeAudioModal()">閉じる</button>
+      <button class="btn-primary btn-sm" id="btn-save-audio-order" onclick="saveAudioOrder()" style="display:none; margin-left:8px;">並び順を保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 楽曲編集モーダル ========== -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-edit-title">楽曲を編集</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>曲名 / Title</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="edit-title" style="flex:1">
+          <button class="btn-secondary btn-sm" onclick="renameSongTitle()" title="曲名をシートとDriveフォルダに反映">📁 名前変更</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group fixed-120">
+        <label>作曲年 / Year</label>
+        <input type="number" id="edit-year" placeholder="例: 2023">
+      </div>
+      <div class="form-group">
+        <label>ステータス / Status</label>
+        <select id="edit-status">
+          <option value="非公開">非公開 / Private</option>
+          <option value="公開">公開 / Public</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>編成名（日本語）</label>
+        <input type="text" id="edit-ensemble-ja" placeholder="例: 弦楽四重奏">
+      </div>
+      <div class="form-group">
+        <label>Ensemble (English)</label>
+        <input type="text" id="edit-ensemble-en" placeholder="e.g. String Quartet">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>音源URL（複数行可）</label>
+        <textarea id="edit-audio-url" rows="2" placeholder="https://..."></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>作曲者コメント / Composer's Note</label>
+        <textarea id="edit-comment" rows="5" placeholder="長文可。改行も反映されます。"></textarea>
+      </div>
+    </div>
+    <div class="form-row" style="align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="btn-secondary btn-sm" onclick="rescanAudio()" id="btn-rescan">🔄 音源を再スキャン</button>
+      <button class="btn-secondary btn-sm" onclick="openAudioModalFromEdit()">🎵 音源リストを編集</button>
+      <span id="rescan-result" style="font-size:12px; color:var(--text-sub);"></span>
+    </div>
+    
+    <!-- 使用楽器 -->
+    <div style="margin-bottom:12px;">
+      <label style="font-size:13px; color:var(--text-sub); margin-bottom:6px; display:block">使用楽器 / Instruments</label>
+      <div class="instrument-editor">
+        <div class="category-tabs" id="edit-cat-tabs"></div>
+        <div class="instrument-grid" id="edit-instr-grid"></div>
+      </div>
+      <!-- 追加済み楽器リスト -->
+      <ul class="instrument-list" id="edit-instr-list" style="margin-top:12px;"></ul>
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+      <button class="btn-danger btn-sm" onclick="deleteSong()" id="btn-delete-song">削除</button>
+      <button class="btn-secondary" onclick="closeEditModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveSong()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 楽曲詳細モーダル（閲覧用） ========== -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title"></div>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div class="detail-grid" id="detail-grid"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+      <button class="btn-secondary btn-sm" onclick="closeDetailModal()">閉じる</button>
+      <button class="btn-secondary btn-sm" id="btn-edit-from-detail" onclick="editFromDetail()" style="display:none">編集</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// GAS API エンドポイント設定
+// ============================================================
+// ★ここにGAS Web AppのURLを貼る（後述のステップで取得）
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyssQCwDrg54ErhAme1xS3v2ltx_tWjCgD0Lst4dA6-RaU3QZuGPnQ-NWvOnKQqxdaK/exec';
+
+// ============================================================
+// 状態管理
+// ============================================================
+const State = {
+  lang: 'ja',
+  isAdmin: false,
+  adminToken: '',
+  songs: [],
+  filteredSongs: [],
+  masterData: { categories: [], instruments: [] },
+  editingSong: null,
+  detailSong: null,
+  filterInstruments: [],  // 楽器絞り込みで選択中の楽器コードリスト
+  editInstruments: [],    // 編集モーダルで選択中の楽器リスト [{code, parts}]
+  masterEditCatId: null,  // 楽器マスターで選択中カテゴリID
+  masterCategories: [],   // 編集中のカテゴリ（保存前の状態）
+  masterInstruments: [],  // 編集中の楽器
+  inboxItems: [],
+  sortColumn: null,   // 'title' | 'year' | 'status' | null
+  sortDir: 'asc',     // 'asc' | 'desc'
+};
+
+// ============================================================
+// 起動処理
+// ============================================================
+window.onload = function() {
+  // URLパラメータからtokenを取得（?token=claude でアクセスすると管理モード）
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token') || '';
+  State.isAdmin = token === 'claude'; // ← GASのCONFIG.ADMIN_TOKENと同じ値にする
+  State.adminToken = State.isAdmin ? token : '';
+  applyAdminUI();
+  loadInitialData();
+};
+
+function applyAdminUI() {
+  const adminTabs = document.querySelectorAll('#tab-inbox, #tab-instruments');
+  adminTabs.forEach(t => t.style.display = State.isAdmin ? '' : 'none');
+  document.getElementById('btn-add-song').style.display = State.isAdmin ? '' : 'none';
+  document.getElementById('th-actions').style.display = State.isAdmin ? '' : 'none';
+  document.getElementById('th-check').style.display = State.isAdmin ? '' : 'none';
+  document.getElementById('th-status').style.display = State.isAdmin ? '' : 'none';
+
+  const modeLabel = document.getElementById('mode-label');
+  if (State.isAdmin) {
+    modeLabel.textContent = '管理モード';
+    modeLabel.classList.add('admin', 'rainbow');
+    document.body.classList.add('admin-mode');
+  } else {
+    modeLabel.textContent = '閲覧モード';
+    modeLabel.classList.remove('admin', 'rainbow');
+    document.body.classList.remove('admin-mode');
+  }
+}
+
+function openAudioModalFromEdit() {
+  if (!State.editingSong) return;
+  const currentVal = document.getElementById('edit-audio-url').value;
+  audioModalSongId = State.editingSong.id;
+  audioModalEditable = true;
+  audioModalFromEdit = true;
+  audioModalEntries = parseAudioEntries(currentVal);
+
+  document.getElementById('audio-modal-title').textContent = t('音源リストを編集', 'Edit Audio Files');
+  document.getElementById('btn-save-audio-order').style.display = 'none';
+  renderAudioList();
+  document.getElementById('modal-audio').classList.add('open');
+}
+
+function closeAudioModal() {
+  if (audioModalFromEdit && State.editingSong) {
+    const newVal = entriesToAudioUrl(audioModalEntries);
+    document.getElementById('edit-audio-url').value = newVal;
+  }
+  audioModalFromEdit = false;
+  document.getElementById('modal-audio').classList.remove('open');
+}
+
+async function loadInitialData() {
+  showLoading(true);
+  try {
+    const [songs, master] = await Promise.all([
+      callGAS('apiGetAllSongs'),
+      callGAS('apiGetInstrumentMaster'),
+    ]);
+    State.songs = songs || [];
+    State.masterData = master || { categories: [], instruments: [] };
+    State.masterCategories = JSON.parse(JSON.stringify(State.masterData.categories));
+    State.masterInstruments = JSON.parse(JSON.stringify(State.masterData.instruments));
+    applyFilters();
+    renderFilterCatTabs();
+    renderMaster();
+    applyLang();
+  } catch(e) {
+    showToast('データ読み込みに失敗しました: ' + e.message);
+  }
+  showLoading(false);
+}
+
+// ============================================================
+// 言語切り替え
+// ============================================================
+function setLang(lang) {
+  State.lang = lang;
+  document.getElementById('btn-ja').classList.toggle('active', lang === 'ja');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  applyLang();
+  applyFilters();
+}
+
+function t(ja, en) {
+  return State.lang === 'ja' ? ja : en;
+}
+
+function applyLang() {
+  document.querySelectorAll('[data-ja]').forEach(el => {
+    el.textContent = State.lang === 'ja' ? el.dataset.ja : el.dataset.en;
+  });
+  document.getElementById('mode-label').textContent =
+    State.isAdmin ? t('管理モード', 'Admin Mode') : t('閲覧モード', 'View Mode');
+  // タイトルを言語に合わせて切り替え
+  document.getElementById('site-title').childNodes[0].textContent =
+    State.lang === 'ja' ? '徳備 康純 作品リスト ' : 'List of Works by TOKUBI, Yasuzumi ';
+}
+
+// ============================================================
+// タブ切り替え
+// ============================================================
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'inbox') loadInbox();
+}
+
+// ============================================================
+// GAS呼び出し
+// ============================================================
+async function callGAS(fnName, ...args) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // GASのCORS制限でapplication/jsonは使えないのでtext/plainにする
+    body: JSON.stringify({ fn: fnName, args: args }),
+  });
+  if (!res.ok) throw new Error('HTTP error: ' + res.status);
+  const data = await res.json();
+  // apiGetAllSongsなど配列を直接返す関数はそのまま返す
+  // success/errorを持つオブジェクトはそのまま返す
+  return data;
+}
+
+// ============================================================
+// 楽曲一覧・検索
+// ============================================================
+function applyFilters() {
+  const text = document.getElementById('search-text').value.toLowerCase();
+  const yearFrom = parseInt(document.getElementById('filter-year-from').value) || 0;
+  const yearTo = parseInt(document.getElementById('filter-year-to').value) || 9999;
+  const status = document.getElementById('filter-status').value;
+
+  State.filteredSongs = State.songs.filter(song => {
+    // 閲覧モードでは非公開を除外
+    if (!State.isAdmin && song.status !== '公開') return false;
+
+    // テキスト検索
+    const title = (song.title || '').toLowerCase();
+    const ensJa = (song.ensemble_ja || '').toLowerCase();
+    const ensEn = (song.ensemble_en || '').toLowerCase();
+    if (text && !title.includes(text) && !ensJa.includes(text) && !ensEn.includes(text)) return false;
+
+    // 作曲年
+    if (song.year && (song.year < yearFrom || song.year > yearTo)) return false;
+
+    // ステータス
+    if (status && song.status !== status) return false;
+
+    // 楽器（全て含む）
+    if (State.filterInstruments.length > 0) {
+      const songCodes = (song.instruments || []).map(i => i.code);
+      if (!State.filterInstruments.every(code => songCodes.includes(code))) return false;
+    }
+
+    return true;
+  });
+  // ソート
+  if (State.sortColumn) {
+    State.filteredSongs.sort((a, b) => {
+      let va, vb;
+      if (State.sortColumn === 'year') {
+        va = parseInt(a.year) || 0;
+        vb = parseInt(b.year) || 0;
+        return State.sortDir === 'asc' ? va - vb : vb - va;
+      }
+      if (State.sortColumn === 'parts') {
+        va = (a.instruments || []).reduce((s, i) => s + (parseInt(i.parts) || 1), 0);
+        vb = (b.instruments || []).reduce((s, i) => s + (parseInt(i.parts) || 1), 0);
+        return State.sortDir === 'asc' ? va - vb : vb - va;
+      }
+      if (State.sortColumn === 'audio') {
+        va = parseAudioEntries(a.audio_url).length;
+        vb = parseAudioEntries(b.audio_url).length;
+        return State.sortDir === 'asc' ? va - vb : vb - va;
+      }
+      if (State.sortColumn === 'ensemble') {
+        va = String(State.lang === 'ja' ? (a.ensemble_ja || '') : (a.ensemble_en || a.ensemble_ja || '')).toLowerCase();
+        vb = String(State.lang === 'ja' ? (b.ensemble_ja || '') : (b.ensemble_en || b.ensemble_ja || '')).toLowerCase();
+      } else {
+        va = String(a[State.sortColumn] ?? '').toLowerCase();
+        vb = String(b[State.sortColumn] ?? '').toLowerCase();
+      }
+      const cmp = va.localeCompare(vb, 'ja');
+      return State.sortDir === 'asc' ? cmp : -cmp;
+    });
+  }
+  renderSongsTable();
+}
+
+function renderSongsTable() {
+  const tbody = document.getElementById('songs-tbody');
+  const empty = document.getElementById('songs-empty');
+
+  if (State.filteredSongs.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    document.getElementById('empty-msg').textContent = t('データがありません', 'No results found');
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = State.filteredSongs.map(song => {
+    const ensemble = State.lang === 'ja' ? (song.ensemble_ja || '') : (song.ensemble_en || song.ensemble_ja || '');
+
+    // 使用楽器→パート数合計に変更
+    const totalParts = (song.instruments || []).reduce((sum, i) => sum + (parseInt(i.parts) || 1), 0);
+    const partsCell = totalParts > 0 ? `<span class="pill">${totalParts}${t('人', 'pt')}</span>` : '—';
+
+    // 音源ボタンを♪に省略
+const audioEntries = parseAudioEntries(song.audio_url);
+    const audioCell = audioEntries.length === 0
+      ? '—'
+      : `<button class="btn-secondary btn-sm" onclick="event.stopPropagation(); openAudioModal('${song.id}', false)" style="padding:2px 6px; font-size:14px; line-height:1.4;">♪<sub style="font-size:9px; margin-left:1px;">${audioEntries.length}</sub></button>`;
+
+    const adminCells = State.isAdmin ? `
+      <td style="width:36px" onclick="event.stopPropagation()">
+        <input type="checkbox" class="row-check" data-id="${song.id}" onchange="onRowCheck()">
+      </td>
+    ` : '';
+
+    // 管理モードのみステータスバッジ表示
+    const statusCell = State.isAdmin ? `<td>${song.status === '公開'
+      ? `<span class="status-badge status-public">${t('公開', 'Public')}</span>`
+      : `<span class="status-badge status-private">${t('非公開', 'Private')}</span>`
+    }</td>` : '';
+
+    const actionCell = State.isAdmin ? `
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
+        <button class="btn-icon btn-sm" title="編集" onclick="openEditModal('${song.id}')">✏️</button>
+        ${song.folder_id ? `<a href="https://drive.google.com/drive/folders/${song.folder_id}" target="_blank"><button class="btn-icon btn-sm" title="Driveを開く">📁</button></a>` : ''}
+      </td>
+    ` : '';
+
+    return `<tr onclick="openDetailModal('${song.id}')" style="cursor:pointer" data-id="${song.id}">
+      ${adminCells}
+      <td><strong>${escHtml(song.title || '')}</strong></td>
+      <td>${song.year || ''}</td>
+      <td>${escHtml(ensemble)}</td>
+      <td>${partsCell}</td>
+      ${statusCell}
+      <td>${audioCell}</td>
+      ${actionCell}
+    </tr>`;
+  }).join('');
+}
+
+function toggleAdvSearch() {
+  const el = document.getElementById('adv-search');
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : '';
+  document.getElementById('btn-adv-search').textContent = isOpen
+    ? t('絞り込み ▾', 'Filter ▾')
+    : t('絞り込み ▴', 'Filter ▴');
+}
+
+// ============================================================
+// 楽器絞り込みUI（検索エリア用）
+// ============================================================
+function renderFilterCatTabs() {
+  const cats = State.masterData.categories;
+  const tabsEl = document.getElementById('filter-cat-tabs');
+  tabsEl.innerHTML = cats.map(c =>
+    `<button class="cat-btn" onclick="selectFilterCat('${c.id}')">${State.lang === 'ja' ? c.name_ja : (c.name_en || c.name_ja)}</button>`
+  ).join('');
+  // 最初のカテゴリを選択
+  if (cats.length > 0) selectFilterCat(cats[0].id);
+}
+
+function selectFilterCat(catId) {
+  document.querySelectorAll('#filter-cat-tabs .cat-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', State.masterData.categories[i]?.id === catId);
+  });
+  const instrs = State.masterData.instruments.filter(i => i.category_id === catId);
+  const grid = document.getElementById('filter-instr-grid');
+  grid.innerHTML = instrs.map(i => {
+    const selected = State.filterInstruments.includes(i.code);
+    return `<button class="instr-btn ${selected ? 'selected' : ''}" onclick="toggleFilterInstr('${i.code}')">
+      ${State.lang === 'ja' ? i.name_ja : (i.name_en || i.name_ja)}
+    </button>`;
+  }).join('');
+}
+
+function toggleFilterInstr(code) {
+  const idx = State.filterInstruments.indexOf(code);
+  if (idx === -1) State.filterInstruments.push(code);
+  else State.filterInstruments.splice(idx, 1);
+  // タグ更新
+  renderFilterTags();
+  // グリッドのselected状態更新
+  document.querySelectorAll('#filter-instr-grid .instr-btn').forEach(btn => {
+    // onclickからcode取得
+    const m = btn.getAttribute('onclick').match(/'([^']+)'/);
+    if (m) btn.classList.toggle('selected', State.filterInstruments.includes(m[1]));
+  });
+  applyFilters();
+}
+
+function renderFilterTags() {
+  const el = document.getElementById('filter-instr-tags');
+  el.innerHTML = State.filterInstruments.map(code => {
+    const instr = State.masterData.instruments.find(i => i.code === code);
+    const name = instr ? (State.lang === 'ja' ? instr.name_ja : (instr.name_en || instr.name_ja)) : code;
+    return `<span class="filter-tag">${name}<button onclick="toggleFilterInstr('${code}')">✕</button></span>`;
+  }).join('');
+}
+
+// ============================================================
+// 詳細モーダル
+// ============================================================
+function openDetailModal(songId) {
+  const song = State.songs.find(s => s.id === songId);
+  if (!song) return;
+  State.detailSong = song;
+
+  document.getElementById('detail-title').textContent = song.title || '';
+  const ensemble = State.lang === 'ja' ? (song.ensemble_ja || '') : (song.ensemble_en || song.ensemble_ja || '');
+  const audioEntries = parseAudioEntries(song.audio_url);
+    const audioCell = audioEntries.length === 0
+      ? '—'
+      : `<button class="btn-secondary btn-sm" onclick="openAudioModal('${song.id}', false)">${t('音源', 'Audio')} (${audioEntries.length})</button>`;
+  const instruments = (song.instruments || [])
+    .map(i => `<span class="pill">${State.lang === 'ja' ? i.name_ja : (i.name_en || i.name_ja)}${i.parts > 1 ? '×' + i.parts : ''}</span>`)
+    .join(' ');
+
+  const comment = (song.comment || '').replace(/\n/g, '<br>');
+  document.getElementById('detail-grid').innerHTML = `
+    <span class="detail-label">${t('作曲年', 'Year')}</span><span class="detail-value">${song.year || '—'}</span>
+    <span class="detail-label">${t('編成', 'Ensemble')}</span><span class="detail-value">${escHtml(ensemble) || '—'}</span>
+    <span class="detail-label">${t('使用楽器', 'Instruments')}</span><div class="detail-value instrument-pills">${instruments || '—'}</div>
+    <span class="detail-label">${t('音源', 'Audio')}</span><div class="detail-value">${audioCell}</div>
+    <span class="detail-label">${t('ステータス', 'Status')}</span><span class="detail-value">${song.status || ''}</span>
+    ${comment ? `<span class="detail-label">${t('コメント', "Composer's Note")}</span><div class="detail-value" style="white-space:pre-wrap; line-height:1.8;">${comment}</div>` : ''}
+  `;
+  document.getElementById('btn-edit-from-detail').style.display = State.isAdmin ? '' : 'none';
+  document.getElementById('modal-detail').classList.add('open');
+}
+
+function closeDetailModal() {
+  document.getElementById('modal-detail').classList.remove('open');
+}
+
+function editFromDetail() {
+  closeDetailModal();
+  if (State.detailSong) openEditModal(State.detailSong.id);
+}
+
+// ============================================================
+// 編集モーダル
+// ============================================================
+function openEditModal(songId) {
+  const isNew = songId === null;
+  State.editingSong = isNew ? null : State.songs.find(s => s.id === songId);
+  const song = State.editingSong || {};
+
+  document.getElementById('modal-edit-title').textContent = isNew ? t('楽曲を追加', 'Add Work') : t('楽曲を編集', 'Edit Work');
+  document.getElementById('edit-title').value = song.title || '';
+  document.getElementById('edit-year').value = song.year || '';
+  document.getElementById('edit-status').value = song.status || '非公開';
+  document.getElementById('edit-ensemble-ja').value = song.ensemble_ja || '';
+  document.getElementById('edit-ensemble-en').value = song.ensemble_en || '';
+  document.getElementById('edit-audio-url').value = song.audio_url || '';
+  document.getElementById('edit-comment').value = song.comment || '';
+  document.getElementById('btn-delete-song').style.display = isNew ? 'none' : '';
+
+  // 楽器の初期化
+  State.editInstruments = JSON.parse(JSON.stringify(song.instruments || []));
+
+  renderEditCatTabs();
+  renderEditInstrList();
+
+  document.getElementById('modal-edit').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('modal-edit').classList.remove('open');
+}
+
+function renderEditCatTabs() {
+  const cats = State.masterData.categories;
+  const tabsEl = document.getElementById('edit-cat-tabs');
+  tabsEl.innerHTML = cats.map(c =>
+    `<button class="cat-btn" onclick="selectEditCat('${c.id}')">${c.name_ja}</button>`
+  ).join('');
+  if (cats.length > 0) selectEditCat(cats[0].id);
+}
+
+function selectEditCat(catId) {
+  document.querySelectorAll('#edit-cat-tabs .cat-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', State.masterData.categories[i]?.id === catId);
+  });
+  const instrs = State.masterData.instruments.filter(i => i.category_id === catId);
+  const grid = document.getElementById('edit-instr-grid');
+  grid.innerHTML = instrs.map(i => {
+    const alreadyAdded = State.editInstruments.some(ei => ei.code === i.code);
+    return `<button class="instr-btn ${alreadyAdded ? 'selected' : ''}" onclick="toggleEditInstr('${i.code}')">
+      ${i.name_ja}
+    </button>`;
+  }).join('');
+}
+
+function toggleEditInstr(code) {
+  const idx = State.editInstruments.findIndex(i => i.code === code);
+  if (idx === -1) {
+    const instr = State.masterData.instruments.find(i => i.code === code);
+    State.editInstruments.push({ code, parts: 1, name_ja: instr?.name_ja, name_en: instr?.name_en });
+  } else {
+    State.editInstruments.splice(idx, 1);
+  }
+  // グリッドのボタン状態だけ更新
+  document.querySelectorAll('#edit-instr-grid .instr-btn').forEach(btn => {
+    const m = btn.getAttribute('onclick').match(/'([^']+)'/);
+    if (m) btn.classList.toggle('selected', State.editInstruments.some(ei => ei.code === m[1]));
+  });
+  renderEditInstrList();
+}
+
+function renderEditInstrList() {
+  const ul = document.getElementById('edit-instr-list');
+  ul.innerHTML = State.editInstruments.map((item, idx) => `
+    <li class="instrument-list-item" draggable="true"
+        ondragstart="dragStart(event,${idx})"
+        ondragover="dragOver(event)"
+        ondrop="dropItem(event,${idx},'edit')">
+      <span class="drag-handle">⠿</span>
+      <span class="instr-name">${item.name_ja || item.code}</span>
+      <input type="number" class="parts-input" min="1" value="${item.parts}"
+             onchange="updateParts(${idx}, this.value)">
+      <span style="font-size:12px;color:var(--text-sub)">pt</span>
+      <button class="btn-icon btn-sm" onclick="removeEditInstr(${idx})">✕</button>
+    </li>
+  `).join('');
+}
+
+function updateParts(idx, val) {
+  State.editInstruments[idx].parts = parseInt(val) || 1;
+}
+
+function removeEditInstr(idx) {
+  const code = State.editInstruments[idx].code;
+  State.editInstruments.splice(idx, 1);
+  // グリッドのボタン状態更新
+  document.querySelectorAll('#edit-instr-grid .instr-btn').forEach(btn => {
+    const m = btn.getAttribute('onclick').match(/'([^']+)'/);
+    if (m && m[1] === code) btn.classList.remove('selected');
+  });
+  renderEditInstrList();
+}
+
+async function saveSong() {
+  const song = {
+    id: State.editingSong?.id || '',
+    folder_id: State.editingSong?.folder_id || '',
+    title: document.getElementById('edit-title').value,
+    year: document.getElementById('edit-year').value,
+    status: document.getElementById('edit-status').value,
+    ensemble_ja: document.getElementById('edit-ensemble-ja').value,
+    ensemble_en: document.getElementById('edit-ensemble-en').value,
+    audio_url: document.getElementById('edit-audio-url').value,
+    comment: document.getElementById('edit-comment').value,
+    instruments: State.editInstruments,
+  };
+
+  showLoading(true);
+  try {
+    const res = await callGAS('apiSaveSong', State.adminToken, song);
+    if (res.success) {
+      showToast(t('保存しました', 'Saved'));
+      closeEditModal();
+      await reloadSongs();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+async function deleteSong() {
+  if (!State.editingSong) return;
+  if (!confirm(t('削除しますか？', 'Delete this work?'))) return;
+  showLoading(true);
+  try {
+    const res = await callGAS('apiDeleteSong', State.adminToken, State.editingSong.id);
+    if (res.success) {
+      showToast(t('削除しました', 'Deleted'));
+      closeEditModal();
+      await reloadSongs();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+async function reloadSongs() {
+  State.songs = await callGAS('apiGetAllSongs') || [];
+  applyFilters();
+}
+
+// ============================================================
+// ドラッグ&ドロップ（楽器並び替え）
+// ============================================================
+let dragSrcIdx = null;
+
+function dragStart(e, idx) {
+  dragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.target.classList.add('dragging'), 0);
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function dropItem(e, targetIdx, context) {
+  e.preventDefault();
+  if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+  document.querySelectorAll('.instrument-list-item').forEach(el => el.classList.remove('dragging'));
+
+  if (context === 'edit') {
+    const arr = State.editInstruments;
+    const [moved] = arr.splice(dragSrcIdx, 1);
+    arr.splice(targetIdx, 0, moved);
+    renderEditInstrList();
+  }
+  dragSrcIdx = null;
+}
+
+// ============================================================
+// inbox
+// ============================================================
+async function loadInbox() {
+  showLoading(true);
+  try {
+    State.inboxItems = await callGAS('apiGetInbox') || [];
+    renderInbox();
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+function renderInbox() {
+  const el = document.getElementById('inbox-list');
+  document.getElementById('inbox-count').textContent = State.inboxItems.length + '件';
+  if (State.inboxItems.length === 0) {
+    el.innerHTML = '<div class="empty-state"><p>新規フォルダはありません</p></div>';
+    return;
+  }
+  el.innerHTML = State.inboxItems.map((item, i) => `
+    <div class="inbox-item ${item.checked ? 'checked' : ''}" id="inbox-item-${i}">
+      <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleInboxCheck(${i}, this.checked)">
+      <span class="inbox-name">${escHtml(item.folder_name || '')}</span>
+      <span class="inbox-date">${formatDate(item.last_updated)}</span>
+      <a href="${item.folder_url}" target="_blank" style="font-size:12px">Drive</a>
+    </div>
+  `).join('');
+}
+
+function toggleInboxCheck(idx, checked) {
+  State.inboxItems[idx].checked = checked;
+  const el = document.getElementById('inbox-item-' + idx);
+  el.classList.toggle('checked', checked);
+}
+
+async function doScan() {
+  showLoading(true);
+  try {
+    const res = await callGAS('apiScanNewFolders', State.adminToken);
+    showToast(res.count + t('件のフォルダを検出しました', ' folders found'));
+    await loadInbox();
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+async function doImport() {
+  const checkedIds = State.inboxItems.filter(i => i.checked).map(i => i.folder_id);
+  if (checkedIds.length === 0) { showToast(t('チェックされた項目がありません', 'No items checked')); return; }
+  showLoading(true);
+  try {
+    const res = await callGAS('apiImportCheckedFolders', State.adminToken, checkedIds);
+    showToast(res.imported + t('件インポートしました', ' items imported'));
+    await reloadSongs();
+    await loadInbox();
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+async function doIgnore() {
+  const checkedIds = State.inboxItems.filter(i => i.checked).map(i => i.folder_id);
+  if (checkedIds.length === 0) { showToast(t('チェックされた項目がありません', 'No items checked')); return; }
+  showLoading(true);
+  try {
+    await callGAS('apiMoveToIgnoreList', State.adminToken, checkedIds);
+    showToast(t('無視リストに追加しました', 'Moved to ignore list'));
+    await loadInbox();
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+// ============================================================
+// 楽器マスター編集
+// ============================================================
+function renderMaster() {
+  renderMasterCatList();
+  renderMasterInstrList();
+}
+
+function renderMasterCatList() {
+  const ul = document.getElementById('master-cat-list');
+  ul.innerHTML = State.masterCategories.map((c, idx) => `
+    <li class="master-cat-item ${State.masterEditCatId === c.id ? 'selected' : ''}"
+        draggable="true"
+        ondragstart="masterDragStart(event,${idx},'cat')"
+        ondragover="dragOver(event)"
+        ondrop="masterDrop(event,${idx},'cat')"
+        onclick="selectMasterCat('${c.id}')">
+      <span class="drag-handle">⠿</span>
+      <span style="flex:1; font-size:14px">${c.name_ja || c.id}</span>
+      <button class="btn-icon btn-sm" onclick="event.stopPropagation(); editCategoryName('${c.id}')">✏️</button>
+      <button class="btn-icon btn-sm" onclick="event.stopPropagation(); deleteCategory('${c.id}')">✕</button>
+    </li>
+  `).join('');
+}
+
+function renderMasterInstrList() {
+  const ul = document.getElementById('master-instr-list');
+  const title = document.getElementById('master-instr-title');
+  if (!State.masterEditCatId) {
+    ul.innerHTML = '';
+    title.textContent = t('楽器（カテゴリを選択）', 'Instruments (select a category)');
+    document.getElementById('btn-add-instr').disabled = true;
+    return;
+  }
+  const cat = State.masterCategories.find(c => c.id === State.masterEditCatId);
+  title.textContent = (cat?.name_ja || '') + ' の楽器';
+  document.getElementById('btn-add-instr').disabled = false;
+
+  const instrs = State.masterInstruments.filter(i => i.category_id === State.masterEditCatId);
+  ul.innerHTML = instrs.map((instr, localIdx) => {
+    const globalIdx = State.masterInstruments.indexOf(instr);
+    return `
+    <li class="master-instr-item"
+        draggable="true"
+        ondragstart="masterDragStart(event,${globalIdx},'instr')"
+        ondragover="dragOver(event)"
+        ondrop="masterDrop(event,${globalIdx},'instr')">
+      <span class="drag-handle">⠿</span>
+      <input type="text" value="${escHtml(instr.name_ja || '')}" style="flex:1"
+             placeholder="日本語名" onchange="updateInstrName(${globalIdx},'name_ja',this.value)">
+      <input type="text" value="${escHtml(instr.name_en || '')}" style="flex:1"
+             placeholder="English name" onchange="updateInstrName(${globalIdx},'name_en',this.value)">
+      <button class="btn-icon btn-sm" onclick="deleteInstrument(${globalIdx})">✕</button>
+    </li>`;
+  }).join('');
+}
+
+function selectMasterCat(catId) {
+  State.masterEditCatId = catId;
+  renderMasterCatList();
+  renderMasterInstrList();
+}
+
+function addCategory() {
+  const name = prompt(t('カテゴリ名（日本語）を入力してください', 'Enter category name (Japanese)'));
+  if (!name) return;
+  const id = 'Cat_' + Date.now();
+  State.masterCategories.push({ id, name_ja: name, name_en: '', sort_order: State.masterCategories.length + 1 });
+  selectMasterCat(id);
+  renderMasterCatList();
+}
+
+function editCategoryName(catId) {
+  const cat = State.masterCategories.find(c => c.id === catId);
+  const newJa = prompt(t('カテゴリ名（日本語）', 'Category name (JP)'), cat.name_ja);
+  if (newJa === null) return;
+  const newEn = prompt('Category name (English)', cat.name_en || '');
+  if (newEn === null) return;
+  cat.name_ja = newJa;
+  cat.name_en = newEn;
+  renderMasterCatList();
+  renderMasterInstrList();
+}
+
+function deleteCategory(catId) {
+  if (!confirm(t('このカテゴリと所属楽器を削除しますか？', 'Delete this category and its instruments?'))) return;
+  State.masterCategories = State.masterCategories.filter(c => c.id !== catId);
+  State.masterInstruments = State.masterInstruments.filter(i => i.category_id !== catId);
+  if (State.masterEditCatId === catId) State.masterEditCatId = null;
+  renderMaster();
+}
+
+function addInstrument() {
+  if (!State.masterEditCatId) return;
+  const instrsInCat = State.masterInstruments.filter(i => i.category_id === State.masterEditCatId);
+  // codeは後で英語名から自動生成するが、今は仮IDを使う
+  const tempCode = 'instr_' + Date.now();
+  State.masterInstruments.push({
+    code: tempCode,
+    category_id: State.masterEditCatId,
+    name_ja: '',
+    name_en: '',
+    sort_order: instrsInCat.length + 1,
+  });
+  renderMasterInstrList();
+  // 追加した行にフォーカス
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#master-instr-list input[type=text]');
+    if (inputs.length > 0) inputs[inputs.length - 2].focus();
+  }, 50);
+}
+
+function updateInstrName(idx, field, val) {
+  State.masterInstruments[idx][field] = val;
+  // name_enが入力されたらcodeを自動更新（既存データでない場合）
+  if (field === 'name_en' && val) {
+    const cat = State.masterCategories.find(c => c.id === State.masterInstruments[idx].category_id);
+    const prefix = cat?.id?.replace('Cat_', '').substring(0, 2) || 'XX';
+    State.masterInstruments[idx].code = prefix + '_' + val.replace(/\s+/g, '');
+  }
+}
+
+function deleteInstrument(idx) {
+  State.masterInstruments.splice(idx, 1);
+  renderMasterInstrList();
+}
+
+let masterDragSrcIdx = null;
+let masterDragType = null;
+
+function masterDragStart(e, idx, type) {
+  masterDragSrcIdx = idx;
+  masterDragType = type;
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function masterDrop(e, targetIdx, type) {
+  e.preventDefault();
+  if (masterDragSrcIdx === null || masterDragSrcIdx === targetIdx || masterDragType !== type) return;
+  if (type === 'cat') {
+    const [moved] = State.masterCategories.splice(masterDragSrcIdx, 1);
+    State.masterCategories.splice(targetIdx, 0, moved);
+    State.masterCategories.forEach((c, i) => c.sort_order = i + 1);
+    renderMasterCatList();
+  } else {
+    const [moved] = State.masterInstruments.splice(masterDragSrcIdx, 1);
+    State.masterInstruments.splice(targetIdx, 0, moved);
+    State.masterInstruments.forEach((i, idx) => i.sort_order = idx + 1);
+    renderMasterInstrList();
+  }
+  masterDragSrcIdx = null;
+}
+
+async function saveMaster() {
+  // コードの最終整合（name_enがあればカテゴリID+name_enで生成、なければname_jaのローマ字は諦めてtempCodeのまま）
+  State.masterInstruments.forEach(instr => {
+    if (instr.name_en && instr.code.startsWith('instr_')) {
+      const cat = State.masterCategories.find(c => c.id === instr.category_id);
+      const catId = cat?.id || 'XX';
+      instr.code = catId + '_' + instr.name_en.replace(/\s+/g, '');
+    }
+  });
+
+  showLoading(true);
+  try {
+    const res = await callGAS('apiSaveInstrumentMaster', State.adminToken, State.masterCategories, State.masterInstruments);
+    if (res.success) {
+      State.masterData = { categories: [...State.masterCategories], instruments: [...State.masterInstruments] };
+      showToast(t('楽器マスターを保存しました', 'Instrument master saved'));
+      renderFilterCatTabs();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+// ============================================================
+// ユーティリティ
+// ============================================================
+function showLoading(show) {
+  document.getElementById('loading').classList.toggle('show', show);
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  if (isNaN(date)) return String(d).substring(0, 10);
+  return date.toLocaleDateString('ja-JP');
+}
+// チェックボックス操作
+function onRowCheck() {
+  const checked = document.querySelectorAll('.row-check:checked');
+  const all = document.querySelectorAll('.row-check');
+  document.getElementById('check-all').checked = checked.length === all.length && all.length > 0;
+  document.getElementById('check-all').indeterminate = checked.length > 0 && checked.length < all.length;
+  updateBulkBar();
+}
+
+function toggleCheckAll(checked) {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = checked);
+  updateBulkBar();
+}
+
+function updateBulkBar() {
+  const checked = document.querySelectorAll('.row-check:checked');
+  const bar = document.getElementById('bulk-action-row');
+  bar.style.display = checked.length > 0 ? '' : 'none';
+  document.getElementById('bulk-count').textContent = checked.length + '件選択中';
+}
+
+function clearSelection() {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  document.getElementById('check-all').checked = false;
+  document.getElementById('check-all').indeterminate = false;
+  updateBulkBar();
+}
+
+async function bulkSetStatus(status) {
+  const checkedIds = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.dataset.id);
+  if (checkedIds.length === 0) return;
+
+  showLoading(true);
+  try {
+    // 選択された曲を順に保存（ステータスだけ変更）
+    await Promise.all(checkedIds.map(id => {
+      const song = State.songs.find(s => s.id === id);
+      if (!song) return Promise.resolve();
+      return callGAS('apiSaveSong', State.adminToken, { ...song, status });
+    }));
+    showToast(checkedIds.length + t('件のステータスを変更しました', ' items updated'));
+    clearSelection();
+    await reloadSongs();
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  showLoading(false);
+}
+// 音源再スキャン
+async function rescanAudio() {
+  if (!State.editingSong) return;
+  const btn = document.getElementById('btn-rescan');
+  const result = document.getElementById('rescan-result');
+  btn.disabled = true;
+  result.textContent = t('スキャン中...', 'Scanning...');
+  try {
+    const res = await callGAS('apiRescanAudio', State.adminToken, State.editingSong.id);
+    if (res.success) {
+      document.getElementById('edit-audio-url').value = res.audioUrl;
+      result.textContent = t(`${res.count}件の音源を取得しました`, `${res.count} audio file(s) found`);
+      State.editingSong.audio_url = res.audioUrl;
+    } else {
+      result.textContent = 'Error: ' + res.error;
+    }
+  } catch(e) {
+    result.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+// 曲名変更（シート+Drive）
+async function renameSongTitle() {
+  if (!State.editingSong) return;
+  const newTitle = document.getElementById('edit-title').value.trim();
+  if (!newTitle) { showToast(t('曲名を入力してください', 'Please enter a title')); return; }
+  if (newTitle === State.editingSong.title) { showToast(t('曲名は変わっていません', 'Title is unchanged')); return; }
+  if (!confirm(t(
+    `曲名を「${newTitle}」に変更し、Driveのフォルダ名も変更します。よろしいですか？`,
+    `Rename to "${newTitle}" and update the Drive folder name?`
+  ))) return;
+
+  showLoading(true);
+  try {
+    const res = await callGAS('apiRenameSongTitle', State.adminToken, State.editingSong.id, newTitle);
+    if (res.success) {
+      if (res.warning) showToast('⚠️ ' + res.warning);
+      else showToast(t('名前を変更しました', 'Renamed successfully'));
+      State.editingSong.title = newTitle;
+      await reloadSongs();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+// 音源モーダル
+let audioModalSongId = null;
+let audioModalEditable = false;
+let audioModalEntries = []; // {url, name}[]
+let audioDragSrcIdx = null;
+let audioModalFromEdit = false;
+
+function openAudioModal(songId, editable) {
+  const song = State.songs.find(s => s.id === songId);
+  if (!song) return;
+  audioModalSongId = songId;
+  audioModalEditable = editable;
+  audioModalFromEdit = false;
+  audioModalEntries = parseAudioEntries(song.audio_url);
+
+  document.getElementById('audio-modal-title').textContent = song.title + ' — ' + t('音源一覧', 'Audio Files');
+  document.getElementById('btn-save-audio-order').style.display = editable ? '' : 'none';
+  renderAudioList();
+  document.getElementById('modal-audio').classList.add('open');
+}
+
+function closeAudioModal() {
+  if (audioModalFromEdit) {
+    const newVal = entriesToAudioUrl(audioModalEntries);
+    document.getElementById('edit-audio-url').value = newVal;
+  }
+  audioModalFromEdit = false;
+  document.getElementById('modal-audio').classList.remove('open');
+}
+function renderAudioList() {
+  const ul = document.getElementById('audio-list');
+  if (audioModalEntries.length === 0) {
+    ul.innerHTML = `<li style="color:var(--text-sub); font-size:14px; padding:12px;">${t('音源ファイルがありません', 'No audio files')}</li>`;
+    return;
+  }
+  ul.innerHTML = audioModalEntries.map((entry, i) => {
+    const handle = audioModalEditable ? `<span class="drag-handle" style="cursor:grab;">⠿</span>` : '';
+    const removeBtn = audioModalEditable ? `<button class="btn-icon btn-sm" onclick="removeAudioEntry(${i})">✕</button>` : '';
+    const displayName = entry.name.replace(/\.mp3$/i, '');
+    return `
+      <li class="audio-list-item"
+          data-idx="${i}"
+          ${audioModalEditable ? 'draggable="true"' : ''}>
+        ${handle}
+        <a href="${entry.url}" target="_blank">🎵 ${escHtml(displayName)}</a>
+        ${removeBtn}
+      </li>`;
+  }).join('');
+
+  // ドラッグイベントをJSで登録
+  if (audioModalEditable) {
+    ul.querySelectorAll('li[draggable]').forEach((li, i) => {
+      li.addEventListener('dragstart', e => {
+        audioDragSrcIdx = i;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => li.classList.add('dragging'), 0);
+      });
+      li.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      });
+      li.addEventListener('dragleave', () => li.classList.remove('dragging'));
+      li.addEventListener('drop', e => {
+        e.preventDefault();
+        if (audioDragSrcIdx === null || audioDragSrcIdx === i) return;
+        ul.querySelectorAll('li').forEach(el => el.classList.remove('dragging'));
+        const [moved] = audioModalEntries.splice(audioDragSrcIdx, 1);
+        audioModalEntries.splice(i, 0, moved);
+        audioDragSrcIdx = null;
+        renderAudioList();
+      });
+      li.addEventListener('dragend', () => {
+        ul.querySelectorAll('li').forEach(el => el.classList.remove('dragging'));
+        audioDragSrcIdx = null;
+      });
+    });
+  }
+}
+
+function removeAudioEntry(idx) {
+  audioModalEntries.splice(idx, 1);
+  renderAudioList();
+}
+
+async function saveAudioOrder() {
+  const song = State.songs.find(s => s.id === audioModalSongId);
+  if (!song) return;
+  const newAudioUrl = entriesToAudioUrl(audioModalEntries);
+  showLoading(true);
+  try {
+    const res = await callGAS('apiSaveSong', State.adminToken, { ...song, audio_url: newAudioUrl });
+    if (res.success) {
+      showToast(t('音源の並び順を保存しました', 'Audio order saved'));
+      await reloadSongs();
+      closeAudioModal();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+function parseAudioEntries(audioUrl) {
+  return (audioUrl || '').split('\n')
+    .filter(u => u && u !== '音源なし')
+    .map(entry => {
+      const idx = entry.indexOf('|');
+      if (idx === -1) return { url: entry, name: entry.split('/').pop() || entry };
+      return { url: entry.substring(0, idx), name: entry.substring(idx + 1) };
+    });
+}
+
+function entriesToAudioUrl(entries) {
+  return entries.length > 0 ? entries.map(e => e.url + '|' + e.name).join('\n') : '音源なし';
+}
+function setSortColumn(col) {
+  if (State.sortColumn === col) {
+    State.sortDir = State.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    State.sortColumn = col;
+    State.sortDir = 'asc';
+  }
+  updateSortIcons();
+  applyFilters();
+}
+
+function updateSortIcons() {
+  ['title', 'year', 'ensemble', 'parts', 'status', 'audio'].forEach(col => {
+    const th = document.querySelector(`[onclick="setSortColumn('${col}')"]`);
+    if (!th) return;
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (State.sortColumn === col) {
+      th.classList.add(State.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+</script>
+</body>
+</html>
+
+
+
+

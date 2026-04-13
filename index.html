@@ -1124,7 +1124,18 @@ async function loadIgnoreList() {
   showLoading(true);
   try {
     const res = await callGAS('apiGetIgnoreList', State.adminToken);
-    State.ignoreItems = Array.isArray(res) ? res : (res.data || []);
+    console.log('ignoreList res:', res, Array.isArray(res));
+    // 配列・オブジェクト・ネストどれでも対応
+    if (Array.isArray(res)) {
+      State.ignoreItems = res;
+    } else if (res && Array.isArray(res.data)) {
+      State.ignoreItems = res.data;
+    } else if (res && res.success === false) {
+      showToast('Error: ' + res.error);
+      State.ignoreItems = [];
+    } else {
+      State.ignoreItems = [];
+    }
     renderIgnoreList();
   } catch(e) { showToast('Error: ' + e.message); }
   showLoading(false);

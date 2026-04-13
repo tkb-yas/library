@@ -229,10 +229,12 @@ body.admin-mode {
   /* ============================================================
      inbox
   ============================================================ */
-  .inbox-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); }
-  .inbox-item.checked { background: var(--accent-light); border-color: var(--accent); }
-  .inbox-name { flex: 1; font-size: 14px; }
-  .inbox-date { font-size: 12px; color: var(--text-sub); }
+.inbox-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; background: var(--surface); }
+.inbox-item.checked { background: var(--accent-light); border-color: var(--accent); }
+.inbox-name { flex: 1; font-size: 14px; min-width: 0; word-break: break-all; }
+.inbox-date { font-size: 12px; color: var(--text-sub); white-space: nowrap; }
+.inbox-item input[type=checkbox] { flex-shrink: 0; width: 16px; height: 16px; }
+.inbox-item a { flex-shrink: 0; font-size: 12px; }
 
   /* ============================================================
      ローディング・トースト
@@ -385,12 +387,19 @@ th.sort-desc .sort-icon::after { content: '▼'; }
   <!-- ========== 新規取込ページ（管理者のみ） ========== -->
   <div class="page" id="page-inbox">
     <div class="card" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-      <button class="btn-primary" onclick="doScan()">① Driveをスキャン</button>
-      <button class="btn-primary" onclick="doImport()">② チェック済みをインポート</button>
-      <button class="btn-secondary" onclick="doIgnore()">選択を無視リストへ</button>
+      <button class="btn-primary" id="btn-scan" onclick="doScan()">① Driveをスキャン</button>
+      <button class="btn-primary" id="btn-import" onclick="doImport()">② チェック済みをインポート</button>
+      <button class="btn-secondary" id="btn-ignore-action" onclick="doIgnoreAction()">選択を無視リストへ</button>
       <span id="inbox-count" style="color:var(--text-sub); font-size:13px;"></span>
     </div>
-    <div class="card">
+    <!-- サブタブ -->
+    <div style="display:flex; gap:4px; margin-bottom:12px;">
+      <button class="btn-secondary" id="subtab-inbox" onclick="switchInboxTab('inbox')"
+        style="border-radius:var(--radius) var(--radius) 0 0; border-bottom:none; background:var(--accent); color:#fff;">未取込</button>
+      <button class="btn-secondary" id="subtab-ignore" onclick="switchInboxTab('ignore')"
+        style="border-radius:var(--radius) var(--radius) 0 0; border-bottom:none;">無視リスト</button>
+    </div>
+    <div class="card" style="margin-top:0; border-radius:0 var(--radius) var(--radius) var(--radius);">
       <div id="inbox-list"></div>
     </div>
   </div>
@@ -552,7 +561,9 @@ const State = {
   masterCategories: [],   // 編集中のカテゴリ（保存前の状態）
   masterInstruments: [],  // 編集中の楽器
   inboxItems: [],
-  sortColumn: null,   // 'title' | 'year' | 'status' | null
+  ignoreItems: [],
+  inboxTab: 'inbox',  // 'inbox' | 'ignore'
+  sortColumn: null,
   sortDir: 'asc',     // 'asc' | 'desc'
 };
 
@@ -668,7 +679,9 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
 
-  if (name === 'inbox') loadInbox();
+  if (name === 'inbox') {
+    switchInboxTab(State.inboxTab);
+  }
 }
 
 // ============================================================
@@ -1104,11 +1117,47 @@ async function loadInbox() {
   showLoading(false);
 }
 
+async function loadIgnoreList() {
+  showLoading(true);
+  try {
+    State.ignoreItems = await callGAS('apiGetIgnoreList') || [];
+    renderIgnoreList();
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+function switchInboxTab(tab) {
+  State.inboxTab = tab;
+
+  // サブタブのスタイル切り替え
+  document.getElementById('subtab-inbox').style.background = tab === 'inbox' ? 'var(--accent)' : '';
+  document.getElementById('subtab-inbox').style.color = tab === 'inbox' ? '#fff' : '';
+  document.getElementById('subtab-ignore').style.background = tab === 'ignore' ? 'var(--accent)' : '';
+  document.getElementById('subtab-ignore').style.color = tab === 'ignore' ? '#fff' : '';
+
+  // ボタン切り替え
+  const btnScan = document.getElementById('btn-scan');
+  const btnImport = document.getElementById('btn-import');
+  const btnIgnoreAction = document.getElementById('btn-ignore-action');
+
+  if (tab === 'inbox') {
+    btnScan.style.display = '';
+    btnImport.style.display = '';
+    btnIgnoreAction.textContent = '選択を無視リストへ';
+    loadInbox();
+  } else {
+    btnScan.style.display = 'none';
+    btnImport.style.display = 'none';
+    btnIgnoreAction.textContent = '選択を無視解除';
+    loadIgnoreList();
+  }
+}
+
 function renderInbox() {
   const el = document.getElementById('inbox-list');
   document.getElementById('inbox-count').textContent = State.inboxItems.length + '件';
   if (State.inboxItems.length === 0) {
-    el.innerHTML = '<div class="empty-state"><p>新規フォルダはありません</p></div>';
+    el.innerHTML = '<div style="color:var(--text-sub); font-size:14px; padding:12px;">新規フォルダはありません</div>';
     return;
   }
   el.innerHTML = State.inboxItems.map((item, i) => `
@@ -1116,7 +1165,23 @@ function renderInbox() {
       <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleInboxCheck(${i}, this.checked)">
       <span class="inbox-name">${escHtml(item.folder_name || '')}</span>
       <span class="inbox-date">${formatDate(item.last_updated)}</span>
-      <a href="${item.folder_url}" target="_blank" style="font-size:12px">Drive</a>
+      <a href="${item.folder_url}" target="_blank">Drive</a>
+    </div>
+  `).join('');
+}
+
+function renderIgnoreList() {
+  const el = document.getElementById('inbox-list');
+  document.getElementById('inbox-count').textContent = State.ignoreItems.length + '件';
+  if (State.ignoreItems.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-sub); font-size:14px; padding:12px;">無視リストは空です</div>';
+    return;
+  }
+  el.innerHTML = State.ignoreItems.map((item, i) => `
+    <div class="inbox-item ${item.checked ? 'checked' : ''}" id="ignore-item-${i}">
+      <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleIgnoreCheck(${i}, this.checked)">
+      <span class="inbox-name">${escHtml(item.folder_name || '')}</span>
+      <span class="inbox-date">${escHtml(item.folder_id || '')}</span>
     </div>
   `).join('');
 }
@@ -1150,6 +1215,14 @@ async function doImport() {
   showLoading(false);
 }
 
+async function doIgnoreAction() {
+  if (State.inboxTab === 'inbox') {
+    await doIgnore();
+  } else {
+    await doUnignore();
+  }
+}
+
 async function doIgnore() {
   const checkedIds = State.inboxItems.filter(i => i.checked).map(i => i.folder_id);
   if (checkedIds.length === 0) { showToast(t('チェックされた項目がありません', 'No items checked')); return; }
@@ -1160,6 +1233,24 @@ async function doIgnore() {
     await loadInbox();
   } catch(e) { showToast('Error: ' + e.message); }
   showLoading(false);
+}
+
+async function doUnignore() {
+  const checkedIds = State.ignoreItems.filter(i => i.checked).map(i => i.folder_id);
+  if (checkedIds.length === 0) { showToast('チェックされた項目がありません'); return; }
+  showLoading(true);
+  try {
+    await callGAS('apiRemoveFromIgnoreList', State.adminToken, checkedIds);
+    showToast('無視リストから解除しました');
+    await loadIgnoreList();
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+function toggleIgnoreCheck(idx, checked) {
+  State.ignoreItems[idx].checked = checked;
+  const el = document.getElementById('ignore-item-' + idx);
+  el.classList.toggle('checked', checked);
 }
 
 // ============================================================

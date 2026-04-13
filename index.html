@@ -1120,7 +1120,7 @@ async function loadInbox() {
 async function loadIgnoreList() {
   showLoading(true);
   try {
-    State.ignoreItems = await callGAS('apiGetIgnoreList') || [];
+    State.ignoreItems = Array.isArray(res) ? res : (res.data || []);
     renderIgnoreList();
   } catch(e) { showToast('Error: ' + e.message); }
   showLoading(false);

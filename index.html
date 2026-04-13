@@ -1120,6 +1120,7 @@ async function loadInbox() {
 async function loadIgnoreList() {
   showLoading(true);
   try {
+    const res = await callGAS('apiGetIgnoreList', State.adminToken);
     State.ignoreItems = Array.isArray(res) ? res : (res.data || []);
     renderIgnoreList();
   } catch(e) { showToast('Error: ' + e.message); }

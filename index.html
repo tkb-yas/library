@@ -680,9 +680,16 @@ function showPage(name) {
   document.getElementById('tab-' + name).classList.add('active');
 
   if (name === 'inbox') {
-    // ページ表示時は常にinboxタブを初期表示してデータ読み込み
     State.inboxTab = 'inbox';
-    switchInboxTab('inbox');
+    // サブタブのスタイルだけ初期化
+    document.getElementById('subtab-inbox').style.background = 'var(--accent)';
+    document.getElementById('subtab-inbox').style.color = '#fff';
+    document.getElementById('subtab-ignore').style.background = '';
+    document.getElementById('subtab-ignore').style.color = '';
+    document.getElementById('btn-scan').style.display = '';
+    document.getElementById('btn-import').style.display = '';
+    document.getElementById('btn-ignore-action').textContent = '選択を無視リストへ';
+    // データ読み込みはloadInbox()1回だけ
     loadInbox();
   }
 }

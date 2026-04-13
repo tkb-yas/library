@@ -1212,7 +1212,10 @@ async function doScan() {
   try {
     const res = await callGAS('apiScanNewFolders', State.adminToken);
     showToast(res.count + t('件のフォルダを検出しました', ' folders found'));
-    await loadInbox();
+    // スキャン後はGASから返ってきた件数をそのまま表示するため
+    // loadInbox()は呼ばず、GASのinboxシートを再取得してレンダリングだけ行う
+    State.inboxItems = await callGAS('apiGetInbox') || [];
+    renderInbox();
   } catch(e) { showToast('Error: ' + e.message); }
   showLoading(false);
 }

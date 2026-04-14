@@ -320,22 +320,21 @@ th.sort-desc .sort-icon::after { content: '▼'; }
         <div class="form-row">
           <div class="form-group">
             <label id="lbl-filter-year">作曲年</label>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:8px; align-items:center;">
               <input type="number" id="filter-year-from" placeholder="from" style="width:90px" oninput="applyFilters()">
               <span style="line-height:36px">〜</span>
               <input type="number" id="filter-year-to" placeholder="to" style="width:90px" oninput="applyFilters()">
             </div>
           </div>
           <div class="form-group">
-            <label id="lbl-filter-status">ステータス</label>
-            <select id="filter-status" onchange="applyFilters()">
-              <option value="">すべて / All</option>
-              <option value="公開">公開 / Public</option>
-              <option value="非公開">非公開 / Private</option>
-            </select>
+            <label id="lbl-filter-parts">パート数</label>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <input type="number" id="filter-parts-from" placeholder="from" style="width:90px" min="1" oninput="applyFilters()">
+              <span style="line-height:36px">〜</span>
+              <input type="number" id="filter-parts-to" placeholder="to" style="width:90px" min="1" oninput="applyFilters()">
+            </div>
           </div>
         </div>
-
         <!-- 楽器絞り込み -->
         <div style="margin-top:8px;">
           <label id="lbl-filter-instruments" style="font-size:13px; color:var(--text-sub); margin-bottom:6px; display:block">使用楽器（全て含む）/ Instruments (all selected)</label>
@@ -466,13 +465,6 @@ th.sort-desc .sort-icon::after { content: '▼'; }
         <label>作曲年 / Year</label>
         <input type="number" id="edit-year" placeholder="例: 2023">
       </div>
-      <div class="form-group">
-        <label>ステータス / Status</label>
-        <select id="edit-status">
-          <option value="非公開">非公開 / Private</option>
-          <option value="公開">公開 / Public</option>
-        </select>
-      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -578,12 +570,22 @@ window.onload = function() {
   State.adminToken = State.isAdmin ? token : '';
   applyAdminUI();
   loadInitialData();
+  
+    // モーダル範囲外クリックで閉じる
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', function(e) {
+      if (e.target !== overlay) return;
+      if (overlay.id === 'modal-detail') closeDetailModal();
+      if (overlay.id === 'modal-edit') closeEditModal();
+      if (overlay.id === 'modal-audio') closeAudioModal();
+    });
+  });
 };
 
 function applyAdminUI() {
   const adminTabs = document.querySelectorAll('#tab-inbox, #tab-instruments');
   adminTabs.forEach(t => t.style.display = State.isAdmin ? '' : 'none');
-  document.getElementById('btn-add-song').style.display = State.isAdmin ? '' : 'none';
+ document.getElementById('btn-add-song').style.display = 'none';
   document.getElementById('th-actions').style.display = State.isAdmin ? '' : 'none';
   document.getElementById('th-check').style.display = State.isAdmin ? '' : 'none';
   document.getElementById('th-status').style.display = State.isAdmin ? '' : 'none';
@@ -717,7 +719,9 @@ function applyFilters() {
   const text = document.getElementById('search-text').value.toLowerCase();
   const yearFrom = parseInt(document.getElementById('filter-year-from').value) || 0;
   const yearTo = parseInt(document.getElementById('filter-year-to').value) || 9999;
-  const status = document.getElementById('filter-status').value;
+  const partsFrom = parseInt(document.getElementById('filter-parts-from').value) || 0;
+  const partsTo = parseInt(document.getElementById('filter-parts-to').value) || 9999;
+  const status = State.isAdmin ? '' : '公開';
 
   State.filteredSongs = State.songs.filter(song => {
     // 閲覧モードでは非公開を除外
@@ -732,7 +736,13 @@ function applyFilters() {
     // 作曲年
     if (song.year && (song.year < yearFrom || song.year > yearTo)) return false;
 
+    // パート数
+    const totalParts = (song.instruments || []).reduce((sum, i) => sum + (parseInt(i.parts) || 1), 0);
+    if (partsFrom > 0 && totalParts < partsFrom) return false;
+    if (partsTo < 9999 && totalParts > partsTo) return false;
+
     // ステータス
+    // 閲覧モードでは非公開を除外（isAdminチェックは冒頭で済んでいるので省略）
     if (status && song.status !== status) return false;
 
     // 楽器（全て含む）
@@ -1712,6 +1722,19 @@ function updateSortIcons() {
     }
   });
 }
+// ============================================================
+// モーダル範囲外クリックで閉じる
+// ============================================================
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    // クリックがoverlay自身（背景）の場合だけ閉じる
+    if (e.target !== overlay) return;
+    // 開いているモーダルに応じて対応する閉じる関数を呼ぶ
+    if (overlay.id === 'modal-detail') closeDetailModal();
+    if (overlay.id === 'modal-edit') closeEditModal();
+    if (overlay.id === 'modal-audio') closeAudioModal();
+  });
+});
 </script>
 </body>
 </html>

@@ -583,11 +583,14 @@ window.onload = function() {
     overlay.addEventListener('click', function(e) {
       if (e.target !== overlay) return;
       if (overlay.id === 'modal-detail') closeDetailModal();
-      if (overlay.id === 'modal-edit') closeEditModal();
       if (overlay.id === 'modal-audio') closeAudioModal();
+      if (overlay.id === 'modal-edit') {
+        if (confirm('編集中の内容は破棄されます。閉じてよいですか？')) {
+          closeEditModal();
+        }
+      }
     });
   });
-};
 
 function applyAdminUI() {
   const adminTabs = document.querySelectorAll('#tab-inbox, #tab-instruments');
@@ -1735,21 +1738,7 @@ function updateSortIcons() {
     }
   });
 }
-// ============================================================
-// モーダル範囲外クリックで閉じる
-// ============================================================
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', function(e) {
-      if (e.target !== overlay) return;
-      if (overlay.id === 'modal-detail') closeDetailModal();
-      if (overlay.id === 'modal-audio') closeAudioModal();
-      if (overlay.id === 'modal-edit') {
-        if (confirm('編集中の内容は破棄されます。閉じてよいですか？')) {
-          closeEditModal();
-        }
-      }
-    });
-  });
+
 </script>
 </body>
 </html>

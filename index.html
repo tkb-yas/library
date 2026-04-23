@@ -1091,7 +1091,13 @@ async function deleteSong() {
 }
 
 async function reloadSongs() {
-  State.songs = await callGAS('apiGetAllSongs') || [];
+  // 保存後はGitHubのJSONが更新されるまで少し待ってから再取得
+  await new Promise(r => setTimeout(r, 2000));
+  const res = await fetch('./data/songs_data.json?t=' + Date.now());
+  if (res.ok) {
+    const data = await res.json();
+    State.songs = data.songs || [];
+  }
   applyFilters();
 }
 

@@ -1074,9 +1074,17 @@ async function saveSong() {
   try {
     const res = await callGAS('apiSaveSong', State.adminToken, song);
     if (res.success) {
+      // GAS保存成功後、メモリ上のState.songsを直接更新（GitHub反映待ち不要）
+      const savedSong = { ...song, id: res.id, instruments: State.editInstruments };
+      const idx = State.songs.findIndex(s => s.id === savedSong.id);
+      if (idx !== -1) {
+        State.songs[idx] = savedSong;
+      } else {
+        State.songs.push(savedSong);
+      }
       showToast(t('保存しました', 'Saved'));
       closeEditModal();
-      await reloadSongs();
+      applyFilters();
     } else {
       showToast('Error: ' + res.error);
     }
@@ -1091,9 +1099,11 @@ async function deleteSong() {
   try {
     const res = await callGAS('apiDeleteSong', State.adminToken, State.editingSong.id);
     if (res.success) {
+      // メモリ上から即削除
+      State.songs = State.songs.filter(s => s.id !== State.editingSong.id);
       showToast(t('削除しました', 'Deleted'));
       closeEditModal();
-      await reloadSongs();
+      applyFilters();
     } else {
       showToast('Error: ' + res.error);
     }
@@ -1102,8 +1112,7 @@ async function deleteSong() {
 }
 
 async function reloadSongs() {
-  // 保存後はGitHubのJSONが更新されるまで少し待ってから再取得
-  await new Promise(r => setTimeout(r, 2000));
+  // 通常はメモリ更新で済むが、強制再取得が必要な場合用に残しておく
   const res = await fetch('./data/songs_data.json?t=' + Date.now());
   if (res.ok) {
     const data = await res.json();
@@ -1537,25 +1546,31 @@ function clearSelection() {
 }
 
 async function bulkSetStatus(status) {
+async function bulkSetStatus(status) {
   const checkedIds = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.dataset.id);
   if (checkedIds.length === 0) return;
 
   showLoading(true);
   try {
-    // 選択された曲を順に保存（ステータスだけ変更）
     await Promise.all(checkedIds.map(id => {
       const song = State.songs.find(s => s.id === id);
       if (!song) return Promise.resolve();
       return callGAS('apiSaveSong', State.adminToken, { ...song, status });
     }));
+    // メモリ上のステータスを即更新
+    checkedIds.forEach(id => {
+      const song = State.songs.find(s => s.id === id);
+      if (song) song.status = status;
+    });
     showToast(checkedIds.length + t('件のステータスを変更しました', ' items updated'));
     clearSelection();
-    await reloadSongs();
+    applyFilters();
   } catch(e) {
     showToast('Error: ' + e.message);
   }
   showLoading(false);
 }
+
 // 音源再スキャン
 async function rescanAudio() {
   if (!State.editingSong) return;

@@ -1546,7 +1546,6 @@ function clearSelection() {
 }
 
 async function bulkSetStatus(status) {
-async function bulkSetStatus(status) {
   const checkedIds = [...document.querySelectorAll('.row-check:checked')].map(cb => cb.dataset.id);
   if (checkedIds.length === 0) return;
 

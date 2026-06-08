@@ -407,6 +407,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
   <div class="page" id="page-instruments">
     <div class="card" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;">
       <button class="btn-primary" onclick="saveMaster()">保存</button>
+      <button class="btn-secondary" onclick="autoTranslateMaster()">🌐 自動翻訳</button>
       <span style="color:var(--text-sub); font-size:13px;">カテゴリ・楽器を追加・並び替えしてから保存してください</span>
     </div>
     <div class="master-layout">
@@ -450,13 +451,20 @@ th.sort-desc .sort-icon::after { content: '▼'; }
       <button class="modal-close" onclick="closeEditModal()">✕</button>
     </div>
 
+    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+      <button class="btn-secondary btn-sm" onclick="autoTranslateSong()">🌐 自動翻訳</button>
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label>曲名 / Title</label>
+        <label>曲名（日本語）/ Title (JP)</label>
         <div style="display:flex; gap:8px;">
           <input type="text" id="edit-title" style="flex:1">
           <button class="btn-secondary btn-sm" onclick="renameSongTitle()" title="曲名をシートとDriveフォルダに反映">📁 名前変更</button>
         </div>
+      </div>
+      <div class="form-group">
+        <label>曲名（英語）/ Title (EN)</label>
+        <input type="text" id="edit-title-en">
       </div>
     </div>
 
@@ -491,8 +499,12 @@ th.sort-desc .sort-icon::after { content: '▼'; }
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>作曲者コメント / Composer's Note</label>
+        <label>作曲者コメント（日本語）/ Composer's Note (JP)</label>
         <textarea id="edit-comment" rows="5" placeholder="長文可。改行も反映されます。"></textarea>
+      </div>
+      <div class="form-group">
+        <label>作曲者コメント（英語）/ Composer's Note (EN)</label>
+        <textarea id="edit-comment-en" rows="5" placeholder="Long text supported."></textarea>
       </div>
     </div>
     <div class="form-row" style="align-items:center; gap:8px; flex-wrap:wrap;">
@@ -964,12 +976,14 @@ function openEditModal(songId) {
 
   document.getElementById('modal-edit-title').textContent = isNew ? t('楽曲を追加', 'Add Work') : t('楽曲を編集', 'Edit Work');
   document.getElementById('edit-title').value = song.title || '';
+  document.getElementById('edit-title-en').value = song.title_en || '';
   document.getElementById('edit-year').value = song.year || '';
   document.getElementById('edit-status').value = song.status || '非公開';
   document.getElementById('edit-ensemble-ja').value = song.ensemble_ja || '';
   document.getElementById('edit-ensemble-en').value = song.ensemble_en || '';
   document.getElementById('edit-audio-url').value = song.audio_url || '';
   document.getElementById('edit-comment').value = song.comment || '';
+  document.getElementById('edit-comment-en').value = song.comment_en || '';
   document.getElementById('btn-delete-song').style.display = isNew ? 'none' : '';
 
   // 楽器の初期化
@@ -1061,15 +1075,17 @@ async function saveSong() {
     id: State.editingSong?.id || '',
     folder_id: State.editingSong?.folder_id || '',
     title: document.getElementById('edit-title').value,
+    title_en: document.getElementById('edit-title-en').value,
     year: document.getElementById('edit-year').value,
     status: document.getElementById('edit-status').value,
     ensemble_ja: document.getElementById('edit-ensemble-ja').value,
     ensemble_en: document.getElementById('edit-ensemble-en').value,
     audio_url: document.getElementById('edit-audio-url').value,
     comment: document.getElementById('edit-comment').value,
+    comment_en: document.getElementById('edit-comment-en').value,
     instruments: State.editInstruments,
   };
-
+  
   showLoading(true);
   try {
     const res = await callGAS('apiSaveSong', State.adminToken, song);
@@ -1332,8 +1348,16 @@ function renderMasterCatList() {
         ondrop="masterDrop(event,${idx},'cat')"
         onclick="selectMasterCat('${c.id}')">
       <span class="drag-handle">⠿</span>
-      <span style="flex:1; font-size:14px">${c.name_ja || c.id}</span>
-      <button class="btn-icon btn-sm" onclick="event.stopPropagation(); editCategoryName('${c.id}')">✏️</button>
+      <div style="flex:1; min-width:0;">
+        <input type="text" value="${escHtml(c.name_ja || '')}" placeholder="日本語名"
+          style="width:100%; margin-bottom:3px; font-size:13px;"
+          onclick="event.stopPropagation()"
+          onchange="updateCatName(${idx},'name_ja',this.value)">
+        <input type="text" value="${escHtml(c.name_en || '')}" placeholder="English name"
+          style="width:100%; font-size:13px;"
+          onclick="event.stopPropagation()"
+          onchange="updateCatName(${idx},'name_en',this.value)">
+      </div>
       <button class="btn-icon btn-sm" onclick="event.stopPropagation(); deleteCategory('${c.id}')">✕</button>
     </li>
   `).join('');
@@ -1378,24 +1402,17 @@ function selectMasterCat(catId) {
 }
 
 function addCategory() {
-  const name = prompt(t('カテゴリ名（日本語）を入力してください', 'Enter category name (Japanese)'));
-  if (!name) return;
+  const nameJa = prompt('カテゴリ名（日本語）を入力してください');
+  if (!nameJa) return;
   const id = 'Cat_' + Date.now();
-  State.masterCategories.push({ id, name_ja: name, name_en: '', sort_order: State.masterCategories.length + 1 });
+  State.masterCategories.push({ id, name_ja: nameJa, name_en: '', sort_order: State.masterCategories.length + 1 });
   selectMasterCat(id);
   renderMasterCatList();
 }
 
-function editCategoryName(catId) {
-  const cat = State.masterCategories.find(c => c.id === catId);
-  const newJa = prompt(t('カテゴリ名（日本語）', 'Category name (JP)'), cat.name_ja);
-  if (newJa === null) return;
-  const newEn = prompt('Category name (English)', cat.name_en || '');
-  if (newEn === null) return;
-  cat.name_ja = newJa;
-  cat.name_en = newEn;
-  renderMasterCatList();
-  renderMasterInstrList();
+// 【新規追加】deleteCategory()の直前あたりに追加
+function updateCatName(idx, field, val) {
+  State.masterCategories[idx][field] = val;
 }
 
 function deleteCategory(catId) {
@@ -1465,6 +1482,80 @@ function masterDrop(e, targetIdx, type) {
     renderMasterInstrList();
   }
   masterDragSrcIdx = null;
+}
+
+// ============================================================
+// 自動翻訳
+// ============================================================
+async function autoTranslateSong() {
+  const targets = [];
+  const titleJa = document.getElementById('edit-title').value.trim();
+  const titleEn = document.getElementById('edit-title-en').value.trim();
+  const ensJa = document.getElementById('edit-ensemble-ja').value.trim();
+  const ensEn = document.getElementById('edit-ensemble-en').value.trim();
+  const commentJa = document.getElementById('edit-comment').value.trim();
+  const commentEn = document.getElementById('edit-comment-en').value.trim();
+
+  if (titleJa && !titleEn) targets.push({ key: 'title_en', text: titleJa });
+  if (ensJa && !ensEn) targets.push({ key: 'ensemble_en', text: ensJa });
+  if (commentJa && !commentEn) targets.push({ key: 'comment_en', text: commentJa });
+
+  if (targets.length === 0) {
+    showToast('翻訳対象がありません（日本語入力済かつ英語欄が空の項目のみ翻訳します）');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const res = await callGAS('apiTranslate', State.adminToken, targets);
+    if (res.success) {
+      if (res.results.title_en) document.getElementById('edit-title-en').value = res.results.title_en;
+      if (res.results.ensemble_en) document.getElementById('edit-ensemble-en').value = res.results.ensemble_en;
+      if (res.results.comment_en) document.getElementById('edit-comment-en').value = res.results.comment_en;
+      showToast('翻訳しました');
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+async function autoTranslateMaster() {
+  const targets = [];
+
+  State.masterCategories.forEach((c, idx) => {
+    if (c.name_ja && !c.name_en) targets.push({ key: 'cat_' + idx, text: c.name_ja });
+  });
+  State.masterInstruments.forEach((instr, idx) => {
+    if (instr.name_ja && !instr.name_en) targets.push({ key: 'instr_' + idx, text: instr.name_ja });
+  });
+
+  if (targets.length === 0) {
+    showToast('翻訳対象がありません');
+    return;
+  }
+
+  showLoading(true);
+  try {
+    const res = await callGAS('apiTranslate', State.adminToken, targets);
+    if (res.success) {
+      Object.entries(res.results).forEach(([key, val]) => {
+        if (!val) return;
+        if (key.startsWith('cat_')) {
+          const idx = parseInt(key.replace('cat_', ''));
+          State.masterCategories[idx].name_en = val;
+        } else if (key.startsWith('instr_')) {
+          const idx = parseInt(key.replace('instr_', ''));
+          State.masterInstruments[idx].name_en = val;
+        }
+      });
+      renderMaster();
+      showToast('翻訳しました');
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
 }
 
 async function saveMaster() {

@@ -296,7 +296,8 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 <div id="tabnav">
   <div id="tabnav-inner">
     <button class="tab active" onclick="showPage('songs')" id="tab-songs" data-ja="楽曲一覧" data-en="Works">楽曲一覧</button>
-    <button class="tab" onclick="showPage('inbox')" id="tab-inbox" data-ja="新規取込" data-en="Import" style="display:none">新規取込</button>
+    <button class="tab" onclick="showPage('inbox')" id="tab-inbox" data-ja="新規Drive読込" data-en="Drive Import" style="display:none">新規Drive読込</button>
+    <button class="tab" onclick="showPage('upload')" id="tab-upload" data-ja="アップロード" data-en="Upload" style="display:none">アップロード</button>
     <button class="tab" onclick="showPage('instruments')" id="tab-instruments" data-ja="楽器マスター" data-en="Instruments" style="display:none">楽器マスター</button>
   </div>
 </div>
@@ -344,6 +345,15 @@ th.sort-desc .sort-icon::after { content: '▼'; }
           </div>
           <div class="filter-tags" id="filter-instr-tags" style="margin-top:8px;"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- 楽曲テーブル -->
+    <div class="card" id="fix-instruments-card" style="display:none; background:#fff8e8; border-color:#c8a800;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span style="font-size:13px; color:#8a6500;">🔧 楽器名一括修正（作業後に非表示にしてください）</span>
+        <button class="btn-secondary btn-sm" id="btn-fix-instruments" onclick="fixAllInstruments()">全楽曲の楽器名を一括修正</button>
+        <span id="fix-result" style="font-size:12px; color:var(--text-sub);"></span>
       </div>
     </div>
 
@@ -400,6 +410,45 @@ th.sort-desc .sort-icon::after { content: '▼'; }
     </div>
     <div class="card" style="margin-top:0; border-radius:0 var(--radius) var(--radius) var(--radius);">
       <div id="inbox-list"></div>
+    </div>
+  </div>
+
+  <!-- ========== アップロードページ（管理者のみ） ========== -->
+  <div class="page" id="page-upload">
+    <div class="card" style="border-color: #c8a800; background: #fffdf0;">
+      <p style="font-size:13px; color:#8a6500; font-weight:600;">⚠️ 注意：1回のアップロードは合計50MBまでです。大きなフォルダは分割してアップロードしてください。</p>
+    </div>
+    <div class="card">
+      <div class="form-row" style="align-items:flex-end;">
+        <div class="form-group">
+          <label style="font-size:13px; color:var(--text-sub); margin-bottom:6px; display:block;">フォルダを選択（フォルダ内のファイルが全てアップロードされます）</label>
+          <input type="file" id="upload-folder-input" webkitdirectory multiple
+            style="font-size:13px; padding:6px;"
+            onchange="onUploadFolderSelected(this)">
+        </div>
+      </div>
+      <div id="upload-preview" style="display:none; margin-top:12px;">
+        <div style="font-size:13px; color:var(--text-sub); margin-bottom:8px;">
+          選択中: <strong id="upload-folder-name"></strong> &nbsp;
+          ファイル数: <strong id="upload-file-count"></strong> &nbsp;
+          合計サイズ: <strong id="upload-total-size"></strong>
+        </div>
+        <div id="upload-file-list" style="max-height:200px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius); padding:8px; font-size:12px; color:var(--text-sub);"></div>
+        <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button class="btn-primary" id="btn-start-upload" onclick="startUpload()">📤 アップロード開始</button>
+          <button class="btn-secondary" onclick="resetUpload()">リセット</button>
+        </div>
+      </div>
+      <!-- 進捗表示 -->
+      <div id="upload-progress-area" style="display:none; margin-top:16px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:8px;" id="upload-progress-label">アップロード中...</div>
+        <div style="background:var(--surface2); border-radius:20px; height:12px; overflow:hidden; margin-bottom:8px;">
+          <div id="upload-progress-bar" style="height:100%; background:var(--accent); border-radius:20px; width:0%; transition:width 0.3s;"></div>
+        </div>
+        <div id="upload-progress-detail" style="font-size:12px; color:var(--text-sub);"></div>
+      </div>
+      <!-- 結果表示 -->
+      <div id="upload-result" style="display:none; margin-top:16px;"></div>
     </div>
   </div>
 
@@ -574,6 +623,7 @@ const State = {
   inboxItems: [],
   ignoreItems: [],
   inboxTab: 'inbox',  // 'inbox' | 'ignore'
+  editingSnapshot: null, // 編集開始時のスナップショット（変更検知用）
   sortColumn: null,
   sortDir: 'asc',     // 'asc' | 'desc'
 };
@@ -597,7 +647,11 @@ window.onload = function() {
       if (overlay.id === 'modal-detail') closeDetailModal();
       if (overlay.id === 'modal-audio') closeAudioModal();
       if (overlay.id === 'modal-edit') {
-        if (confirm('編集中の内容は破棄されます。閉じてよいですか？')) {
+        if (hasEditChanges()) {
+          if (confirm('編集中の内容は破棄されます。閉じてよいですか？')) {
+            closeEditModal();
+          }
+        } else {
           closeEditModal();
         }
       }
@@ -606,12 +660,13 @@ window.onload = function() {
 };
 
 function applyAdminUI() {
-  const adminTabs = document.querySelectorAll('#tab-inbox, #tab-instruments');
+  const adminTabs = document.querySelectorAll('#tab-inbox, #tab-upload, #tab-instruments');
   adminTabs.forEach(t => t.style.display = State.isAdmin ? '' : 'none');
- document.getElementById('btn-add-song').style.display = 'none';
+  document.getElementById('btn-add-song').style.display = 'none';
   document.getElementById('th-actions').style.display = State.isAdmin ? '' : 'none';
   document.getElementById('th-check').style.display = State.isAdmin ? '' : 'none';
   document.getElementById('th-status').style.display = State.isAdmin ? '' : 'none';
+  document.getElementById('fix-instruments-card').style.display = State.isAdmin ? '' : 'none';
 
   const modeLabel = document.getElementById('mode-label');
   if (State.isAdmin) {
@@ -678,10 +733,6 @@ function setLang(lang) {
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
   applyLang();
   applyFilters();
-  // 詳細モーダルが開いていれば再描画
-  if (State.detailSong && document.getElementById('modal-detail').classList.contains('open')) {
-    openDetailModal(State.detailSong.id);
-  }
 }
 
 function t(ja, en) {
@@ -857,10 +908,9 @@ const audioEntries = parseAudioEntries(song.audio_url);
       </td>
     ` : '';
 
-    const titleDisplay = State.lang === 'ja' ? (song.title || '') : (song.title_en || song.title || '');
     return `<tr onclick="openDetailModal('${song.id}')" style="cursor:pointer" data-id="${song.id}">
       ${adminCells}
-      <td><strong>${escHtml(titleDisplay)}</strong></td>
+      <td><strong>${escHtml(song.title || '')}</strong></td>
       <td>${song.year || ''}</td>
       <td>${escHtml(ensemble)}</td>
       <td>${partsCell}</td>
@@ -939,25 +989,17 @@ function openDetailModal(songId) {
   if (!song) return;
   State.detailSong = song;
 
-  const titleDisplay = State.lang === 'ja' ? (song.title || '') : (song.title_en || song.title || '');
-  document.getElementById('detail-title').textContent = titleDisplay;
+  document.getElementById('detail-title').textContent = song.title || '';
   const ensemble = State.lang === 'ja' ? (song.ensemble_ja || '') : (song.ensemble_en || song.ensemble_ja || '');
   const audioEntries = parseAudioEntries(song.audio_url);
     const audioCell = audioEntries.length === 0
       ? '—'
       : `<button class="btn-secondary btn-sm" onclick="openAudioModal('${song.id}', false)">${t('音源', 'Audio')} (${audioEntries.length})</button>`;
   const instruments = (song.instruments || [])
-    .map(i => {
-      const instrName = State.lang === 'ja' ? (i.name_ja || i.code) : (i.name_en || i.name_ja || i.code);
-      return `<span class="pill">${instrName}${i.parts > 1 ? '×' + i.parts : ''}</span>`;
-    })
+    .map(i => `<span class="pill">${State.lang === 'ja' ? i.name_ja : (i.name_en || i.name_ja)}${i.parts > 1 ? '×' + i.parts : ''}</span>`)
     .join(' ');
 
-  // 言語に応じてコメントを選択
-  const commentText = State.lang === 'ja'
-    ? (song.comment || '')
-    : (song.comment_en || song.comment || '');
-  const comment = commentText.replace(/\n/g, '<br>');
+  const comment = (song.comment || '').replace(/\n/g, '<br>');
   document.getElementById('detail-grid').innerHTML = `
     <span class="detail-label">${t('作曲年', 'Year')}</span><span class="detail-value">${song.year || '—'}</span>
     <span class="detail-label">${t('編成', 'Ensemble')}</span><span class="detail-value">${escHtml(ensemble) || '—'}</span>
@@ -1005,11 +1047,41 @@ function openEditModal(songId) {
   renderEditCatTabs();
   renderEditInstrList();
 
+  // 編集前スナップショットを記録（枠外クリック時の変更検知用）
+  State.editingSnapshot = JSON.stringify({
+    title: song.title || '',
+    title_en: song.title_en || '',
+    year: String(song.year || ''),
+    status: song.status || '非公開',
+    ensemble_ja: song.ensemble_ja || '',
+    ensemble_en: song.ensemble_en || '',
+    comment: song.comment || '',
+    comment_en: song.comment_en || '',
+    instruments: song.instruments || [],
+  });
+
   document.getElementById('modal-edit').classList.add('open');
 }
 
 function closeEditModal() {
   document.getElementById('modal-edit').classList.remove('open');
+  State.editingSnapshot = null;
+}
+
+function hasEditChanges() {
+  if (!State.editingSnapshot) return false;
+  const current = JSON.stringify({
+    title: document.getElementById('edit-title').value,
+    title_en: document.getElementById('edit-title-en').value,
+    year: document.getElementById('edit-year').value,
+    status: document.getElementById('edit-status').value,
+    ensemble_ja: document.getElementById('edit-ensemble-ja').value,
+    ensemble_en: document.getElementById('edit-ensemble-en').value,
+    comment: document.getElementById('edit-comment').value,
+    comment_en: document.getElementById('edit-comment-en').value,
+    instruments: State.editInstruments,
+  });
+  return current !== State.editingSnapshot;
 }
 
 function renderEditCatTabs() {
@@ -1039,12 +1111,7 @@ function toggleEditInstr(code) {
   const idx = State.editInstruments.findIndex(i => i.code === code);
   if (idx === -1) {
     const instr = State.masterData.instruments.find(i => i.code === code);
-    State.editInstruments.push({
-      code,
-      parts: 1,
-      name_ja: instr?.name_ja || code,
-      name_en: instr?.name_en || '',
-    });
+    State.editInstruments.push({ code, parts: 1, name_ja: instr?.name_ja, name_en: instr?.name_en });
   } else {
     State.editInstruments.splice(idx, 1);
   }
@@ -1058,25 +1125,19 @@ function toggleEditInstr(code) {
 
 function renderEditInstrList() {
   const ul = document.getElementById('edit-instr-list');
-  ul.innerHTML = State.editInstruments.map((item, idx) => {
-    // masterDataから最新の楽器名を取得（tempCodeで保存されていた場合の救済も兼ねる）
-    const masterInstr = State.masterData.instruments.find(i => i.code === item.code);
-    const displayName = masterInstr
-      ? masterInstr.name_ja || masterInstr.name_en || item.code
-      : item.name_ja || item.name_en || item.code;
-    return `
+  ul.innerHTML = State.editInstruments.map((item, idx) => `
     <li class="instrument-list-item" draggable="true"
         ondragstart="dragStart(event,${idx})"
         ondragover="dragOver(event)"
         ondrop="dropItem(event,${idx},'edit')">
       <span class="drag-handle">⠿</span>
-      <span class="instr-name">${escHtml(displayName)}</span>
+      <span class="instr-name">${item.name_ja || item.code}</span>
       <input type="number" class="parts-input" min="1" value="${item.parts}"
              onchange="updateParts(${idx}, this.value)">
       <span style="font-size:12px;color:var(--text-sub)">pt</span>
       <button class="btn-icon btn-sm" onclick="removeEditInstr(${idx})">✕</button>
-    </li>`;
-  }).join('');
+    </li>
+  `).join('');
 }
 
 function updateParts(idx, val) {
@@ -1095,16 +1156,6 @@ function removeEditInstr(idx) {
 }
 
 async function saveSong() {
-  // instrumentsのname_ja/name_enをmasterDataから補完（tempCodeや古いデータへの対策）
-  const enrichedInstruments = State.editInstruments.map(item => {
-    const master = State.masterData.instruments.find(i => i.code === item.code);
-    return {
-      ...item,
-      name_ja: master?.name_ja || item.name_ja || item.code,
-      name_en: master?.name_en || item.name_en || '',
-    };
-  });
-
   const song = {
     id: State.editingSong?.id || '',
     folder_id: State.editingSong?.folder_id || '',
@@ -1117,7 +1168,7 @@ async function saveSong() {
     audio_url: document.getElementById('edit-audio-url').value,
     comment: document.getElementById('edit-comment').value,
     comment_en: document.getElementById('edit-comment-en').value,
-    instruments: enrichedInstruments,
+    instruments: State.editInstruments,
   };
   
   showLoading(true);
@@ -1125,7 +1176,7 @@ async function saveSong() {
     const res = await callGAS('apiSaveSong', State.adminToken, song);
     if (res.success) {
       // GAS保存成功後、メモリ上のState.songsを直接更新（GitHub反映待ち不要）
-      const savedSong = { ...song, id: res.id, instruments: enrichedInstruments };
+      const savedSong = { ...song, id: res.id, instruments: State.editInstruments };
       const idx = State.songs.findIndex(s => s.id === savedSong.id);
       if (idx !== -1) {
         State.songs[idx] = savedSong;
@@ -1877,6 +1928,187 @@ function updateSortIcons() {
       th.classList.add(State.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
     }
   });
+}
+
+// ============================================================
+// アップロード機能
+// ============================================================
+let uploadFiles = [];
+
+function onUploadFolderSelected(input) {
+  uploadFiles = Array.from(input.files);
+  if (uploadFiles.length === 0) return;
+
+  // フォルダ名を取得（パスの最初のセグメント）
+  const folderName = uploadFiles[0].webkitRelativePath.split('/')[0];
+  const totalBytes = uploadFiles.reduce((s, f) => s + f.size, 0);
+  const totalMB = (totalBytes / 1024 / 1024).toFixed(2);
+
+  document.getElementById('upload-folder-name').textContent = folderName;
+  document.getElementById('upload-file-count').textContent = uploadFiles.length + '件';
+  document.getElementById('upload-total-size').textContent = totalMB + ' MB';
+
+  // ファイル一覧表示
+  const listEl = document.getElementById('upload-file-list');
+  listEl.innerHTML = uploadFiles.map(f => {
+    const sizeMB = (f.size / 1024 / 1024).toFixed(2);
+    return `<div>${escHtml(f.name)} <span style="color:var(--text-sub)">(${sizeMB} MB)</span></div>`;
+  }).join('');
+
+  document.getElementById('upload-preview').style.display = '';
+  document.getElementById('upload-result').style.display = 'none';
+  document.getElementById('upload-progress-area').style.display = 'none';
+}
+
+function resetUpload() {
+  uploadFiles = [];
+  document.getElementById('upload-folder-input').value = '';
+  document.getElementById('upload-preview').style.display = 'none';
+  document.getElementById('upload-progress-area').style.display = 'none';
+  document.getElementById('upload-result').style.display = 'none';
+}
+
+async function startUpload() {
+  if (uploadFiles.length === 0) return;
+
+  const folderName = uploadFiles[0].webkitRelativePath.split('/')[0];
+  const totalBytes = uploadFiles.reduce((s, f) => s + f.size, 0);
+  const totalMB = totalBytes / 1024 / 1024;
+
+  if (totalMB > 50) {
+    alert(`合計サイズが ${totalMB.toFixed(2)} MB です。50MB以下に分割してください。`);
+    return;
+  }
+
+  document.getElementById('btn-start-upload').disabled = true;
+  document.getElementById('upload-progress-area').style.display = '';
+  document.getElementById('upload-result').style.display = 'none';
+
+  const progressBar = document.getElementById('upload-progress-bar');
+  const progressLabel = document.getElementById('upload-progress-label');
+  const progressDetail = document.getElementById('upload-progress-detail');
+
+  // ファイルをbase64に変換してGASに送信（ファイルごとに順次送信）
+  let uploadedCount = 0;
+  let folderId = null;
+  const errors = [];
+
+  for (const file of uploadFiles) {
+    progressLabel.textContent = `アップロード中... (${uploadedCount + 1}/${uploadFiles.length})`;
+    progressDetail.textContent = file.name;
+    progressBar.style.width = (uploadedCount / uploadFiles.length * 100) + '%';
+
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await callGAS('apiUploadFile', State.adminToken, {
+        folderName,
+        fileName: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        base64Data: base64,
+        folderId: folderId, // 2ファイル目以降は作成済みフォルダIDを渡す
+      });
+
+      if (res.success) {
+        folderId = res.folderId; // 作成されたフォルダIDを保持
+        uploadedCount++;
+      } else {
+        errors.push(file.name + ': ' + res.error);
+      }
+    } catch(e) {
+      errors.push(file.name + ': ' + e.message);
+    }
+  }
+
+  progressBar.style.width = '100%';
+  progressLabel.textContent = 'アップロード完了';
+  progressDetail.textContent = '';
+
+  // 楽曲として登録
+  const resultEl = document.getElementById('upload-result');
+  resultEl.style.display = '';
+
+  if (folderId) {
+    try {
+      const regRes = await callGAS('apiRegisterUploadedFolder', State.adminToken, {
+        folderId,
+        folderName,
+      });
+      if (regRes.success) {
+        // メモリ上に追加
+        State.songs.push(regRes.song);
+        applyFilters();
+        resultEl.innerHTML = `<div style="color:var(--accent); font-weight:600;">✓ 「${escHtml(folderName)}」をアップロードし、楽曲一覧に登録しました（非公開）。</div>
+          ${errors.length > 0 ? `<div style="color:var(--danger); margin-top:8px; font-size:12px;">一部エラー: ${errors.map(escHtml).join('<br>')}</div>` : ''}`;
+      } else {
+        resultEl.innerHTML = `<div style="color:var(--danger);">登録エラー: ${escHtml(regRes.error)}</div>`;
+      }
+    } catch(e) {
+      resultEl.innerHTML = `<div style="color:var(--danger);">登録エラー: ${escHtml(e.message)}</div>`;
+    }
+  } else {
+    resultEl.innerHTML = `<div style="color:var(--danger);">アップロードに失敗しました。<br>${errors.map(escHtml).join('<br>')}</div>`;
+  }
+
+  document.getElementById('btn-start-upload').disabled = false;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ============================================================
+// 【一時作業用】楽器名一括修正
+// ============================================================
+async function fixAllInstruments() {
+  const result = document.getElementById('fix-result');
+  if (!confirm('全楽曲の楽器名をマスターデータに基づいて修正しGASに保存します。よいですか？')) return;
+
+  const btn = document.getElementById('btn-fix-instruments');
+  btn.disabled = true;
+  let count = 0;
+  const errors = [];
+
+  for (const song of State.songs) {
+    const needsFix = (song.instruments || []).some(i => {
+      const master = State.masterData.instruments.find(m => m.code === i.code);
+      return master && (i.name_ja !== master.name_ja || i.name_en !== master.name_en);
+    });
+    if (!needsFix) continue;
+
+    const fixedInstruments = (song.instruments || []).map(i => {
+      const master = State.masterData.instruments.find(m => m.code === i.code);
+      return { ...i,
+        name_ja: master?.name_ja || i.name_ja || i.code,
+        name_en: master?.name_en || i.name_en || '',
+      };
+    });
+
+    result.textContent = `修正中... ${count}件完了 (${song.title})`;
+    try {
+      const res = await callGAS('apiSaveSong', State.adminToken, { ...song, instruments: fixedInstruments });
+      if (res.success) {
+        const idx = State.songs.findIndex(s => s.id === song.id);
+        if (idx !== -1) State.songs[idx] = { ...song, instruments: fixedInstruments };
+        count++;
+      } else {
+        errors.push(song.title + ': ' + res.error);
+      }
+    } catch(e) {
+      errors.push(song.title + ': ' + e.message);
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  btn.disabled = false;
+  result.textContent = errors.length > 0
+    ? `完了: ${count}件修正。エラー: ${errors.join(' / ')}`
+    : `完了: ${count}件修正。GASでpublishJsonManualを実行してください。`;
+  applyFilters();
 }
 
 </script>

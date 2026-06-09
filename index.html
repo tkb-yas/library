@@ -349,6 +349,15 @@ th.sort-desc .sort-icon::after { content: '▼'; }
     </div>
 
     <!-- 楽曲テーブル -->
+    <div class="card" id="fix-instruments-card" style="display:none; background:#fff8e8; border-color:#c8a800;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <span style="font-size:13px; color:#8a6500;">🔧 楽器名一括修正（作業後に非表示にしてください）</span>
+        <button class="btn-secondary btn-sm" id="btn-fix-instruments" onclick="fixAllInstruments()">全楽曲の楽器名を一括修正</button>
+        <span id="fix-result" style="font-size:12px; color:var(--text-sub);"></span>
+      </div>
+    </div>
+
+    <!-- 楽曲テーブル -->
     <div class="card">
       <div class="song-table-wrap">
         <table id="songs-table">
@@ -659,6 +668,7 @@ function applyAdminUI() {
   document.getElementById('th-actions').style.display = State.isAdmin ? '' : 'none';
   document.getElementById('th-check').style.display = State.isAdmin ? '' : 'none';
   document.getElementById('th-status').style.display = State.isAdmin ? '' : 'none';
+  document.getElementById('fix-instruments-card').style.display = State.isAdmin ? '' : 'none';
 
   const modeLabel = document.getElementById('mode-label');
   if (State.isAdmin) {
@@ -1032,15 +1042,16 @@ function openEditModal(songId) {
   document.getElementById('edit-comment').value = song.comment || '';
   document.getElementById('edit-comment-en').value = song.comment_en || '';
   document.getElementById('btn-delete-song').style.display = isNew ? 'none' : '';
-  // タグ表示エリアをリセット
-  const tagArea = document.getElementById('tag-suggestions');
-  if (tagArea) { tagArea.innerHTML = ''; tagArea.style.display = 'none'; }
 
   // 楽器の初期化
   State.editInstruments = JSON.parse(JSON.stringify(song.instruments || []));
 
   renderEditCatTabs();
   renderEditInstrList();
+
+  // タグ表示エリアをリセット
+  const tagArea = document.getElementById('tag-suggestions');
+  if (tagArea) { tagArea.innerHTML = ''; tagArea.style.display = 'none'; }
 
   // 編集前スナップショットを記録（枠外クリック時の変更検知用）
   State.editingSnapshot = JSON.stringify({
@@ -1506,16 +1517,17 @@ function deleteCategory(catId) {
 function addInstrument() {
   if (!State.masterEditCatId) return;
   const instrsInCat = State.masterInstruments.filter(i => i.category_id === State.masterEditCatId);
-  // name_jaとname_enが入力されるまでcodeを確定しない（tempCodeは使わない）
+  // codeは後で英語名から自動生成するが、今は仮IDを使う
+  const tempCode = 'instr_' + Date.now();
   State.masterInstruments.push({
-    code: '',  // 保存時にname_enから生成する
+    code: tempCode,
     category_id: State.masterEditCatId,
     name_ja: '',
     name_en: '',
     sort_order: instrsInCat.length + 1,
-    _isNew: true,  // 新規フラグ
   });
   renderMasterInstrList();
+  // 追加した行にフォーカス
   setTimeout(() => {
     const inputs = document.querySelectorAll('#master-instr-list input[type=text]');
     if (inputs.length > 0) inputs[inputs.length - 2].focus();
@@ -1638,24 +1650,12 @@ async function autoTranslateMaster() {
 }
 
 async function saveMaster() {
-  // code確定：name_enがあればカテゴリID+name_enで生成。name_enがなければname_jaをそのまま使用。空の楽器は除外。
-  const invalidInstrs = State.masterInstruments.filter(i => !i.name_ja && !i.name_en);
-  if (invalidInstrs.length > 0) {
-    showToast('名前が空の楽器があります。入力するか削除してから保存してください。');
-    return;
-  }
-
+  // コードの最終整合（name_enがあればカテゴリID+name_enで生成、なければname_jaのローマ字は諦めてtempCodeのまま）
   State.masterInstruments.forEach(instr => {
-    if (!instr.code || instr.code === '' || instr._isNew) {
+    if (instr.name_en && instr.code.startsWith('instr_')) {
       const cat = State.masterCategories.find(c => c.id === instr.category_id);
       const catId = cat?.id || 'XX';
-      if (instr.name_en) {
-        instr.code = catId + '_' + instr.name_en.replace(/\s+/g, '');
-      } else {
-        // name_enがない場合はname_jaをローマ字変換せずそのままcodeに使う（後で修正可）
-        instr.code = catId + '_' + instr.name_ja.replace(/\s+/g, '');
-      }
-      delete instr._isNew;
+      instr.code = catId + '_' + instr.name_en.replace(/\s+/g, '');
     }
   });
 
@@ -1764,8 +1764,6 @@ async function rescanAudio() {
     if (res.success) {
       document.getElementById('edit-audio-url').value = res.audioUrl;
       State.editingSong.audio_url = res.audioUrl;
-
-      // タグ情報があれば表示・下書き反映
       if (res.tags && res.tags.length > 0) {
         renderTagSuggestions(res.tags);
         result.textContent = t(`${res.count}件の音源を取得しました（タグ情報あり）`, `${res.count} audio file(s) found (tags available)`);
@@ -1784,40 +1782,39 @@ async function rescanAudio() {
 
 function renderTagSuggestions(tags) {
   const container = document.getElementById('tag-suggestions');
+  if (!tags || tags.length === 0) { container.style.display = 'none'; return; }
+  const hasAnyTag = tags.some(tag => tag.title || tag.artist || tag.album || tag.comment);
+  if (!hasAnyTag) { container.style.display = 'none'; return; }
 
-  // タグから代表値を収集（複数ファイルのtitleはまとめて表示）
-  const titles = [...new Set(tags.map(t => t.title).filter(Boolean))];
-  const artists = [...new Set(tags.map(t => t.artist).filter(Boolean))];
-  const albums = [...new Set(tags.map(t => t.album).filter(Boolean))];
-  const comments = [...new Set(tags.map(t => t.comment).filter(Boolean))];
+  const rows = tags.map(tag => {
+    const fileName = (tag.name || '').replace(/\.mp3$/i, '');
+    const fields = [];
+    if (tag.title)   fields.push({ label: 'タイトル',     value: tag.title,   targetId: 'edit-title' });
+    if (tag.album)   fields.push({ label: 'アルバム',     value: tag.album,   targetId: 'edit-ensemble-ja' });
+    if (tag.artist)  fields.push({ label: 'アーティスト', value: tag.artist,  targetId: null });
+    if (tag.comment) fields.push({ label: 'コメント',     value: tag.comment, targetId: 'edit-comment' });
+    if (fields.length === 0) return '';
+    return `
+      <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border);">
+        <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px;">🎵 ${escHtml(fileName)}</div>
+        ${fields.map(f => `
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">
+            <span style="font-size:11px; color:var(--text-sub); white-space:nowrap; min-width:90px;">${f.label}</span>
+            <span style="font-size:13px; flex:1; word-break:break-all;">${escHtml(f.value)}</span>
+            ${f.targetId
+              ? `<button class="btn-secondary btn-sm" style="flex-shrink:0;" onclick="applyTagToField('${f.targetId}', ${JSON.stringify(f.value)})">→</button>`
+              : '<span style="width:38px;"></span>'}
+          </div>`).join('')}
+      </div>`;
+  }).join('');
 
-  if (!titles.length && !artists.length && !albums.length && !comments.length) {
-    container.style.display = 'none';
-    return;
-  }
-
-  const rows = [];
-  if (titles.length)   rows.push({ label: 'タグ: タイトル', value: titles.join(' / '),   field: 'title' });
-  if (albums.length)   rows.push({ label: 'タグ: アルバム', value: albums.join(' / '),   field: 'ensemble-ja' });
-  if (artists.length)  rows.push({ label: 'タグ: アーティスト', value: artists.join(' / '), field: null });
-  if (comments.length) rows.push({ label: 'タグ: コメント', value: comments.join('\n'), field: 'comment' });
-
-  container.innerHTML = `
-    <div style="font-size:12px; color:var(--text-sub); margin-bottom:6px;">📎 MP3タグ情報（→ボタンで入力欄に転記）</div>
-    ${rows.map(row => `
-      <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:4px;">
-        <span style="font-size:11px; color:var(--text-sub); white-space:nowrap; padding-top:6px; min-width:120px;">${row.label}</span>
-        <span style="font-size:13px; flex:1; word-break:break-all; padding-top:4px;">${escHtml(row.value)}</span>
-        ${row.field ? `<button class="btn-secondary btn-sm" onclick="applyTagToField('${row.field}', ${JSON.stringify(row.value)})">→</button>` : ''}
-      </div>
-    `).join('')}
-  `;
+  container.innerHTML = `<div style="font-size:12px; color:var(--text-sub); margin-bottom:8px;">📎 MP3タグ情報（→ボタンで入力欄に転記）</div>${rows}`;
   container.style.display = '';
 }
 
-function applyTagToField(field, value) {
-  const el = document.getElementById('edit-' + field);
-  if (!el) return;
+function applyTagToField(targetId, value) {
+  const el = document.getElementById(targetId);
+  if (!el) { showToast('入力欄が見つかりません'); return; }
   el.value = value;
   showToast('転記しました');
 }
@@ -2115,6 +2112,54 @@ function fileToBase64(file) {
   });
 }
 
+// ============================================================
+// 【一時作業用】楽器名一括修正
+// ============================================================
+async function fixAllInstruments() {
+  const result = document.getElementById('fix-result');
+  if (!confirm('全楽曲の楽器名をマスターデータに基づいて修正しGASに保存します。よいですか？')) return;
+
+  const btn = document.getElementById('btn-fix-instruments');
+  btn.disabled = true;
+  let count = 0;
+  const errors = [];
+
+  for (const song of State.songs) {
+    const needsFix = (song.instruments || []).some(i =>
+      i.code.startsWith('instr_') || !i.name_ja || i.name_ja === i.code
+    );
+    if (!needsFix) continue;
+
+    const fixedInstruments = (song.instruments || []).map(i => {
+      const master = State.masterData.instruments.find(m => m.code === i.code);
+      return { ...i,
+        name_ja: master?.name_ja || i.name_ja || i.code,
+        name_en: master?.name_en || i.name_en || '',
+      };
+    });
+
+    result.textContent = `修正中... ${count}件完了 (${song.title})`;
+    try {
+      const res = await callGAS('apiSaveSong', State.adminToken, { ...song, instruments: fixedInstruments });
+      if (res.success) {
+        const idx = State.songs.findIndex(s => s.id === song.id);
+        if (idx !== -1) State.songs[idx] = { ...song, instruments: fixedInstruments };
+        count++;
+      } else {
+        errors.push(song.title + ': ' + res.error);
+      }
+    } catch(e) {
+      errors.push(song.title + ': ' + e.message);
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  btn.disabled = false;
+  result.textContent = errors.length > 0
+    ? `完了: ${count}件修正。エラー: ${errors.join(' / ')}`
+    : `完了: ${count}件修正。GASでpublishJsonManualを実行してください。`;
+  applyFilters();
+}
 
 </script>
 </body>

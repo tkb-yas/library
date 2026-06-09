@@ -678,6 +678,10 @@ function setLang(lang) {
   document.getElementById('btn-en').classList.toggle('active', lang === 'en');
   applyLang();
   applyFilters();
+  // 詳細モーダルが開いていれば再描画
+  if (State.detailSong && document.getElementById('modal-detail').classList.contains('open')) {
+    openDetailModal(State.detailSong.id);
+  }
 }
 
 function t(ja, en) {
@@ -853,9 +857,10 @@ const audioEntries = parseAudioEntries(song.audio_url);
       </td>
     ` : '';
 
+    const titleDisplay = State.lang === 'ja' ? (song.title || '') : (song.title_en || song.title || '');
     return `<tr onclick="openDetailModal('${song.id}')" style="cursor:pointer" data-id="${song.id}">
       ${adminCells}
-      <td><strong>${escHtml(song.title || '')}</strong></td>
+      <td><strong>${escHtml(titleDisplay)}</strong></td>
       <td>${song.year || ''}</td>
       <td>${escHtml(ensemble)}</td>
       <td>${partsCell}</td>
@@ -934,17 +939,25 @@ function openDetailModal(songId) {
   if (!song) return;
   State.detailSong = song;
 
-  document.getElementById('detail-title').textContent = song.title || '';
+  const titleDisplay = State.lang === 'ja' ? (song.title || '') : (song.title_en || song.title || '');
+  document.getElementById('detail-title').textContent = titleDisplay;
   const ensemble = State.lang === 'ja' ? (song.ensemble_ja || '') : (song.ensemble_en || song.ensemble_ja || '');
   const audioEntries = parseAudioEntries(song.audio_url);
     const audioCell = audioEntries.length === 0
       ? '—'
       : `<button class="btn-secondary btn-sm" onclick="openAudioModal('${song.id}', false)">${t('音源', 'Audio')} (${audioEntries.length})</button>`;
   const instruments = (song.instruments || [])
-    .map(i => `<span class="pill">${State.lang === 'ja' ? i.name_ja : (i.name_en || i.name_ja)}${i.parts > 1 ? '×' + i.parts : ''}</span>`)
+    .map(i => {
+      const instrName = State.lang === 'ja' ? (i.name_ja || i.code) : (i.name_en || i.name_ja || i.code);
+      return `<span class="pill">${instrName}${i.parts > 1 ? '×' + i.parts : ''}</span>`;
+    })
     .join(' ');
 
-  const comment = (song.comment || '').replace(/\n/g, '<br>');
+  // 言語に応じてコメントを選択
+  const commentText = State.lang === 'ja'
+    ? (song.comment || '')
+    : (song.comment_en || song.comment || '');
+  const comment = commentText.replace(/\n/g, '<br>');
   document.getElementById('detail-grid').innerHTML = `
     <span class="detail-label">${t('作曲年', 'Year')}</span><span class="detail-value">${song.year || '—'}</span>
     <span class="detail-label">${t('編成', 'Ensemble')}</span><span class="detail-value">${escHtml(ensemble) || '—'}</span>
@@ -1026,7 +1039,12 @@ function toggleEditInstr(code) {
   const idx = State.editInstruments.findIndex(i => i.code === code);
   if (idx === -1) {
     const instr = State.masterData.instruments.find(i => i.code === code);
-    State.editInstruments.push({ code, parts: 1, name_ja: instr?.name_ja, name_en: instr?.name_en });
+    State.editInstruments.push({
+      code,
+      parts: 1,
+      name_ja: instr?.name_ja || code,
+      name_en: instr?.name_en || '',
+    });
   } else {
     State.editInstruments.splice(idx, 1);
   }
@@ -1040,19 +1058,25 @@ function toggleEditInstr(code) {
 
 function renderEditInstrList() {
   const ul = document.getElementById('edit-instr-list');
-  ul.innerHTML = State.editInstruments.map((item, idx) => `
+  ul.innerHTML = State.editInstruments.map((item, idx) => {
+    // masterDataから最新の楽器名を取得（tempCodeで保存されていた場合の救済も兼ねる）
+    const masterInstr = State.masterData.instruments.find(i => i.code === item.code);
+    const displayName = masterInstr
+      ? masterInstr.name_ja || masterInstr.name_en || item.code
+      : item.name_ja || item.name_en || item.code;
+    return `
     <li class="instrument-list-item" draggable="true"
         ondragstart="dragStart(event,${idx})"
         ondragover="dragOver(event)"
         ondrop="dropItem(event,${idx},'edit')">
       <span class="drag-handle">⠿</span>
-      <span class="instr-name">${item.name_ja || item.code}</span>
+      <span class="instr-name">${escHtml(displayName)}</span>
       <input type="number" class="parts-input" min="1" value="${item.parts}"
              onchange="updateParts(${idx}, this.value)">
       <span style="font-size:12px;color:var(--text-sub)">pt</span>
       <button class="btn-icon btn-sm" onclick="removeEditInstr(${idx})">✕</button>
-    </li>
-  `).join('');
+    </li>`;
+  }).join('');
 }
 
 function updateParts(idx, val) {
@@ -1071,6 +1095,16 @@ function removeEditInstr(idx) {
 }
 
 async function saveSong() {
+  // instrumentsのname_ja/name_enをmasterDataから補完（tempCodeや古いデータへの対策）
+  const enrichedInstruments = State.editInstruments.map(item => {
+    const master = State.masterData.instruments.find(i => i.code === item.code);
+    return {
+      ...item,
+      name_ja: master?.name_ja || item.name_ja || item.code,
+      name_en: master?.name_en || item.name_en || '',
+    };
+  });
+
   const song = {
     id: State.editingSong?.id || '',
     folder_id: State.editingSong?.folder_id || '',
@@ -1083,7 +1117,7 @@ async function saveSong() {
     audio_url: document.getElementById('edit-audio-url').value,
     comment: document.getElementById('edit-comment').value,
     comment_en: document.getElementById('edit-comment-en').value,
-    instruments: State.editInstruments,
+    instruments: enrichedInstruments,
   };
   
   showLoading(true);
@@ -1091,7 +1125,7 @@ async function saveSong() {
     const res = await callGAS('apiSaveSong', State.adminToken, song);
     if (res.success) {
       // GAS保存成功後、メモリ上のState.songsを直接更新（GitHub反映待ち不要）
-      const savedSong = { ...song, id: res.id, instruments: State.editInstruments };
+      const savedSong = { ...song, id: res.id, instruments: enrichedInstruments };
       const idx = State.songs.findIndex(s => s.id === savedSong.id);
       if (idx !== -1) {
         State.songs[idx] = savedSong;

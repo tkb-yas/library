@@ -561,8 +561,6 @@ th.sort-desc .sort-icon::after { content: '▼'; }
       <button class="btn-secondary btn-sm" onclick="openAudioModalFromEdit()">🎵 音源リストを編集</button>
       <span id="rescan-result" style="font-size:12px; color:var(--text-sub);"></span>
     </div>
-    <!-- MP3タグ表示エリア -->
-    <div id="tag-suggestions" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:12px;"></div>
     
     <!-- 使用楽器 -->
     <div style="margin-bottom:12px;">
@@ -1049,10 +1047,6 @@ function openEditModal(songId) {
   renderEditCatTabs();
   renderEditInstrList();
 
-  // タグ表示エリアをリセット
-  const tagArea = document.getElementById('tag-suggestions');
-  if (tagArea) { tagArea.innerHTML = ''; tagArea.style.display = 'none'; }
-
   // 編集前スナップショットを記録（枠外クリック時の変更検知用）
   State.editingSnapshot = JSON.stringify({
     title: song.title || '',
@@ -1517,17 +1511,15 @@ function deleteCategory(catId) {
 function addInstrument() {
   if (!State.masterEditCatId) return;
   const instrsInCat = State.masterInstruments.filter(i => i.category_id === State.masterEditCatId);
-  // codeは後で英語名から自動生成するが、今は仮IDを使う
-  const tempCode = 'instr_' + Date.now();
   State.masterInstruments.push({
-    code: tempCode,
+    code: '',
     category_id: State.masterEditCatId,
     name_ja: '',
     name_en: '',
     sort_order: instrsInCat.length + 1,
+    _isNew: true,
   });
   renderMasterInstrList();
-  // 追加した行にフォーカス
   setTimeout(() => {
     const inputs = document.querySelectorAll('#master-instr-list input[type=text]');
     if (inputs.length > 0) inputs[inputs.length - 2].focus();
@@ -1650,12 +1642,21 @@ async function autoTranslateMaster() {
 }
 
 async function saveMaster() {
-  // コードの最終整合（name_enがあればカテゴリID+name_enで生成、なければname_jaのローマ字は諦めてtempCodeのまま）
+  // 名前が空の楽器は保存できない
+  const invalidInstrs = State.masterInstruments.filter(i => !i.name_ja && !i.name_en);
+  if (invalidInstrs.length > 0) {
+    showToast('名前が空の楽器があります。入力するか削除してから保存してください。');
+    return;
+  }
+
+  // code確定：空またはtempCodeの場合はname_enまたはname_jaから生成
   State.masterInstruments.forEach(instr => {
-    if (instr.name_en && instr.code.startsWith('instr_')) {
+    if (!instr.code || instr.code === '' || instr._isNew || instr.code.startsWith('instr_')) {
       const cat = State.masterCategories.find(c => c.id === instr.category_id);
       const catId = cat?.id || 'XX';
-      instr.code = catId + '_' + instr.name_en.replace(/\s+/g, '');
+      const base = instr.name_en || instr.name_ja || String(Date.now());
+      instr.code = catId + '_' + base.replace(/\s+/g, '');
+      delete instr._isNew;
     }
   });
 
@@ -1764,13 +1765,9 @@ async function rescanAudio() {
     if (res.success) {
       document.getElementById('edit-audio-url').value = res.audioUrl;
       State.editingSong.audio_url = res.audioUrl;
-      if (res.tags && res.tags.length > 0) {
-        renderTagSuggestions(res.tags);
-        result.textContent = t(`${res.count}件の音源を取得しました（タグ情報あり）`, `${res.count} audio file(s) found (tags available)`);
-      } else {
-        document.getElementById('tag-suggestions').style.display = 'none';
-        result.textContent = t(`${res.count}件の音源を取得しました`, `${res.count} audio file(s) found`);
-      }
+      const tagArea = document.getElementById('tag-suggestions');
+      if (tagArea) { tagArea.innerHTML = ''; tagArea.style.display = 'none'; }
+      result.textContent = t(`${res.count}件の音源を取得しました`, `${res.count} audio file(s) found`);
     } else {
       result.textContent = 'Error: ' + res.error;
     }
@@ -1778,45 +1775,6 @@ async function rescanAudio() {
     result.textContent = 'Error: ' + e.message;
   }
   btn.disabled = false;
-}
-
-function renderTagSuggestions(tags) {
-  const container = document.getElementById('tag-suggestions');
-  if (!tags || tags.length === 0) { container.style.display = 'none'; return; }
-  const hasAnyTag = tags.some(tag => tag.title || tag.artist || tag.album || tag.comment);
-  if (!hasAnyTag) { container.style.display = 'none'; return; }
-
-  const rows = tags.map(tag => {
-    const fileName = (tag.name || '').replace(/\.mp3$/i, '');
-    const fields = [];
-    if (tag.title)   fields.push({ label: 'タイトル',     value: tag.title,   targetId: 'edit-title' });
-    if (tag.album)   fields.push({ label: 'アルバム',     value: tag.album,   targetId: 'edit-ensemble-ja' });
-    if (tag.artist)  fields.push({ label: 'アーティスト', value: tag.artist,  targetId: null });
-    if (tag.comment) fields.push({ label: 'コメント',     value: tag.comment, targetId: 'edit-comment' });
-    if (fields.length === 0) return '';
-    return `
-      <div style="margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border);">
-        <div style="font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px;">🎵 ${escHtml(fileName)}</div>
-        ${fields.map(f => `
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">
-            <span style="font-size:11px; color:var(--text-sub); white-space:nowrap; min-width:90px;">${f.label}</span>
-            <span style="font-size:13px; flex:1; word-break:break-all;">${escHtml(f.value)}</span>
-            ${f.targetId
-              ? `<button class="btn-secondary btn-sm" style="flex-shrink:0;" onclick="applyTagToField('${f.targetId}', ${JSON.stringify(f.value)})">→</button>`
-              : '<span style="width:38px;"></span>'}
-          </div>`).join('')}
-      </div>`;
-  }).join('');
-
-  container.innerHTML = `<div style="font-size:12px; color:var(--text-sub); margin-bottom:8px;">📎 MP3タグ情報（→ボタンで入力欄に転記）</div>${rows}`;
-  container.style.display = '';
-}
-
-function applyTagToField(targetId, value) {
-  const el = document.getElementById(targetId);
-  if (!el) { showToast('入力欄が見つかりません'); return; }
-  el.value = value;
-  showToast('転記しました');
 }
 
 // 曲名変更（シート+Drive）
@@ -1883,14 +1841,31 @@ function renderAudioList() {
     const handle = audioModalEditable ? `<span class="drag-handle" style="cursor:grab;">⠿</span>` : '';
     const removeBtn = audioModalEditable ? `<button class="btn-icon btn-sm" onclick="removeAudioEntry(${i})">✕</button>` : '';
     const displayName = entry.name.replace(/\.mp3$/i, '');
+
+    // タグ情報の表示
+    let tagHtml = '';
+    if (entry.tags) {
+      const tagParts = [];
+      if (entry.tags.title)   tagParts.push(`<span style="font-weight:600;">${escHtml(entry.tags.title)}</span>`);
+      if (entry.tags.artist)  tagParts.push(`<span style="color:var(--text-sub);">${escHtml(entry.tags.artist)}</span>`);
+      if (entry.tags.comment) tagParts.push(`<span style="color:var(--text-sub); font-size:11px; white-space:pre-wrap;">${escHtml(entry.tags.comment)}</span>`);
+      if (tagParts.length > 0) {
+        tagHtml = `<div style="display:flex; flex-direction:column; gap:2px; margin-top:3px;">${tagParts.join('')}</div>`;
+      }
+    }
+
     return `
-      <li class="audio-list-item"
+      <li class="audio-list-item" style="align-items:flex-start;"
           data-idx="${i}"
           ${audioModalEditable ? 'draggable="true"' : ''}>
         ${handle}
-        <a href="${entry.url}" target="_blank">🎵 ${escHtml(displayName)}</a>
+        <div style="flex:1; min-width:0;">
+          <a href="${entry.url}" target="_blank">🎵 ${escHtml(displayName)}</a>
+          ${tagHtml}
+        </div>
         ${removeBtn}
       </li>`;
+  }).join('');
   }).join('');
 
   // ドラッグイベントをJSで登録
@@ -1950,14 +1925,26 @@ function parseAudioEntries(audioUrl) {
   return (audioUrl || '').split('\n')
     .filter(u => u && u !== '音源なし')
     .map(entry => {
-      const idx = entry.indexOf('|');
-      if (idx === -1) return { url: entry, name: entry.split('/').pop() || entry };
-      return { url: entry.substring(0, idx), name: entry.substring(idx + 1) };
+      const parts = entry.split('|');
+      const url = parts[0];
+      const name = parts[1] || url.split('/').pop() || url;
+      let tags = null;
+      if (parts[2]) {
+        try { tags = JSON.parse(decodeURIComponent(parts[2])); } catch(e) {}
+      }
+      return { url, name, tags };
     });
 }
 
 function entriesToAudioUrl(entries) {
-  return entries.length > 0 ? entries.map(e => e.url + '|' + e.name).join('\n') : '音源なし';
+  if (entries.length === 0) return '音源なし';
+  return entries.map(e => {
+    let str = e.url + '|' + e.name;
+    if (e.tags && Object.values(e.tags).some(v => v)) {
+      str += '|' + encodeURIComponent(JSON.stringify(e.tags));
+    }
+    return str;
+  }).join('\n');
 }
 function setSortColumn(col) {
   if (State.sortColumn === col) {

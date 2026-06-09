@@ -2074,10 +2074,9 @@ async function fixAllInstruments() {
   const errors = [];
 
   for (const song of State.songs) {
-    const needsFix = (song.instruments || []).some(i => {
-      const master = State.masterData.instruments.find(m => m.code === i.code);
-      return master && (i.name_ja !== master.name_ja || i.name_en !== master.name_en);
-    });
+    const needsFix = (song.instruments || []).some(i =>
+      i.code.startsWith('instr_') || !i.name_ja || i.name_ja === i.code
+    );
     if (!needsFix) continue;
 
     const fixedInstruments = (song.instruments || []).map(i => {

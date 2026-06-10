@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>徳備 康純 作品リスト / List of Works by TOKUBI, Yasuzumi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   /* ============================================================
      CSS変数・リセット
@@ -372,6 +373,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
               <th data-ja="パート" data-en="Parts" class="sortable" onclick="setSortColumn('parts')">パート <span class="sort-icon" id="sort-icon-parts"></span></th>
               <th id="th-status" data-ja="ステータス" data-en="Status" class="sortable" onclick="setSortColumn('status')" style="display:none">ステータス <span class="sort-icon" id="sort-icon-status"></span></th>
               <th data-ja="音源" data-en="Audio" class="sortable" onclick="setSortColumn('audio')">♪ <span class="sort-icon" id="sort-icon-audio"></span></th>
+              <th data-ja="楽譜" data-en="Score">📄</th>
               <th id="th-actions" style="display:none"></th>
             </tr>
           </thead>
@@ -468,6 +470,63 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 
 </div><!-- /#main -->
 
+
+<!-- ========== 楽譜閲覧モーダル（公開用） ========== -->
+<div class="modal-overlay" id="modal-score">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title" id="score-modal-title">楽譜一覧</div>
+      <button class="modal-close" onclick="closeScoreModal()">✕</button>
+    </div>
+    <ul class="instrument-list" id="score-list"></ul>
+    <div style="margin-top:16px; text-align:right;">
+      <button class="btn-secondary btn-sm" onclick="closeScoreModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 楽譜編集モーダル（管理者用） ========== -->
+<div class="modal-overlay" id="modal-score-edit">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title" id="score-edit-modal-title">楽譜リストを編集</div>
+      <button class="modal-close" onclick="closeScoreEditModal()">✕</button>
+    </div>
+    <div style="background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:10px 14px; margin-bottom:14px; font-size:12px; color:var(--text-sub); line-height:1.7;">
+      ドラッグで並び替えができます。<br>
+      「何ページまで見せるか」は閲覧モードで表示するページ数の上限です。<strong>0に設定すると閲覧リストに表示されません。</strong><br>
+      デフォルト値：1ページ→0（非表示）／2〜5ページ→1／6〜10ページ→2／11ページ以上→4<br>
+      手動で変更した場合は「PDFを再スキャン」しても上書きされません。
+    </div>
+    <ul class="instrument-list" id="score-edit-list"></ul>
+    <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn-secondary btn-sm" onclick="closeScoreEditModal()">キャンセル</button>
+      <button class="btn-primary btn-sm" onclick="saveScoreList()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PDFビューアモーダル ========== -->
+<div class="modal-overlay" id="modal-pdf-viewer">
+  <div class="modal" style="max-width:700px; max-height:90vh; display:flex; flex-direction:column;">
+    <div class="modal-header">
+      <div class="modal-title" id="pdf-viewer-title">楽譜プレビュー</div>
+      <button class="modal-close" onclick="closePdfViewer()">✕</button>
+    </div>
+    <div id="pdf-viewer-info" style="font-size:12px; color:var(--text-sub); margin-bottom:8px;"></div>
+    <div id="pdf-canvas-wrap" style="overflow-y:auto; flex:1; background:#888; border-radius:var(--radius); padding:8px; text-align:center;">
+      <div id="pdf-loading" style="color:#fff; padding:32px;">読み込み中...</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
+      <button class="btn-secondary btn-sm" onclick="pdfPrevPage()" id="btn-pdf-prev">◀ 前</button>
+      <span id="pdf-page-info" style="font-size:13px; min-width:80px; text-align:center;"></span>
+      <button class="btn-secondary btn-sm" onclick="pdfNextPage()" id="btn-pdf-next">次 ▶</button>
+      <span style="flex:1"></span>
+      <button class="btn-secondary btn-sm" onclick="closePdfViewer()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== 音源モーダル ========== -->
 <div class="modal-overlay" id="modal-audio">
   <div class="modal" style="max-width:480px;">
@@ -552,6 +611,11 @@ th.sort-desc .sort-icon::after { content: '▼'; }
       <button class="btn-secondary btn-sm" onclick="openAudioModalFromEdit()">🎵 音源リストを編集</button>
       <span id="rescan-result" style="font-size:12px; color:var(--text-sub);"></span>
     </div>
+    <div class="form-row" style="align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="btn-secondary btn-sm" onclick="rescanScore()" id="btn-rescan-score">🔄 PDFを再スキャン</button>
+      <button class="btn-secondary btn-sm" onclick="openScoreEditModal()">📄 楽譜リストを編集</button>
+      <span id="rescan-score-result" style="font-size:12px; color:var(--text-sub);"></span>
+    </div>
     <!-- MP3タグ表示エリア（再スキャン後に表示） -->
     <div id="tag-suggestions" style="display:none; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:12px;"></div>
     
@@ -619,6 +683,9 @@ const State = {
   editingSnapshot: null, // 編集開始時のスナップショット（変更検知用）
   sortColumn: null,
   sortDir: 'asc',     // 'asc' | 'desc'
+  // 楽譜編集モーダル用
+  scoreEditEntries: [], // [{fileId, name, totalPages, showPages, manual}]
+  scoreEditSongId: null,
 };
 
 // ============================================================
@@ -639,6 +706,9 @@ window.onload = function() {
       if (e.target !== overlay) return;
       if (overlay.id === 'modal-detail') closeDetailModal();
       if (overlay.id === 'modal-audio') closeAudioModal();
+      if (overlay.id === 'modal-score') closeScoreModal();
+      if (overlay.id === 'modal-score-edit') closeScoreEditModal();
+      if (overlay.id === 'modal-pdf-viewer') closePdfViewer();
       if (overlay.id === 'modal-edit') {
         if (hasEditChanges()) {
           if (confirm('編集中の内容は破棄されます。閉じてよいですか？')) {
@@ -706,6 +776,20 @@ async function loadInitialData() {
     State.masterData = data.master || { categories: [], instruments: [] };
     State.masterCategories = JSON.parse(JSON.stringify(State.masterData.categories));
     State.masterInstruments = JSON.parse(JSON.stringify(State.masterData.instruments));
+
+    // 管理者モードの場合はGASから完全データ（scoreEntries含む）を取得して補完
+    if (State.isAdmin) {
+      try {
+        const fullSongs = await callGAS('apiGetAllSongs');
+        if (Array.isArray(fullSongs)) {
+          State.songs = State.songs.map(s => {
+            const full = fullSongs.find(f => f.id === s.id);
+            return full ? { ...s, scoreEntries: full.scoreEntries || [], folder_id: full.folder_id || '' } : s;
+          });
+        }
+      } catch(e) { /* 失敗してもJSONデータで継続 */ }
+    }
+
     applyFilters();
     renderFilterCatTabs();
     renderMaster();
@@ -780,22 +864,6 @@ async function callGAS(fnName, ...args) {
   // apiGetAllSongsなど配列を直接返す関数はそのまま返す
   // success/errorを持つオブジェクトはそのまま返す
   return data;
-}
-
-// DriveフォルダをGASから folder_id を取得して開く（公開JSONには含まれないため）
-async function openDriveFolder(songId, btn) {
-  btn.disabled = true;
-  try {
-    const song = await callGAS('apiGetSong', songId);
-    if (song && song.folder_id) {
-      window.open('https://drive.google.com/drive/folders/' + song.folder_id, '_blank');
-    } else {
-      showToast(t('フォルダIDが取得できませんでした', 'Could not retrieve folder ID'));
-    }
-  } catch(e) {
-    showToast('Error: ' + e.message);
-  }
-  btn.disabled = false;
 }
 
 // ============================================================
@@ -912,9 +980,16 @@ const audioEntries = parseAudioEntries(song.audio_url);
     const actionCell = State.isAdmin ? `
       <td onclick="event.stopPropagation()" style="white-space:nowrap">
         <button class="btn-icon btn-sm" title="編集" onclick="openEditModal('${song.id}')">✏️</button>
-        <button class="btn-icon btn-sm" title="Driveを開く" onclick="openDriveFolder('${song.id}', this)">📁</button>
+        ${song.folder_id ? `<a href="https://drive.google.com/drive/folders/${song.folder_id}" target="_blank"><button class="btn-icon btn-sm" title="Driveを開く">📁</button></a>` : ''}
       </td>
     ` : '';
+
+    // 楽譜ボタン（showPages>0のものが存在する時だけ表示）
+    const scoreEntries = song.scores || [];
+    const visibleScores = scoreEntries.filter(s => s.showPages > 0);
+    const scoreCell = visibleScores.length === 0
+      ? '—'
+      : `<button class="btn-secondary btn-sm" onclick="event.stopPropagation(); openScoreModal('${song.id}')" style="padding:2px 6px; font-size:14px; line-height:1.4;">📄<sub style="font-size:9px; margin-left:1px;">${visibleScores.length}</sub></button>`;
 
     return `<tr onclick="openDetailModal('${song.id}')" style="cursor:pointer" data-id="${song.id}">
       ${adminCells}
@@ -924,6 +999,7 @@ const audioEntries = parseAudioEntries(song.audio_url);
       <td>${partsCell}</td>
       ${statusCell}
       <td>${audioCell}</td>
+      <td>${scoreCell}</td>
       ${actionCell}
     </tr>`;
   }).join('');
@@ -1003,6 +1079,12 @@ function openDetailModal(songId) {
     const audioCell = audioEntries.length === 0
       ? '—'
       : `<button class="btn-secondary btn-sm" onclick="openAudioModal('${song.id}', false)">${t('音源', 'Audio')} (${audioEntries.length})</button>`;
+
+  const visibleScores = (song.scores || []).filter(s => s.showPages > 0);
+  const scoreCell = visibleScores.length === 0
+    ? '—'
+    : `<button class="btn-secondary btn-sm" onclick="openScoreModal('${song.id}')">📄 ${t('楽譜', 'Score')} (${visibleScores.length})</button>`;
+
   const instruments = (song.instruments || [])
     .map(i => `<span class="pill">${State.lang === 'ja' ? i.name_ja : (i.name_en || i.name_ja)}${i.parts > 1 ? '×' + i.parts : ''}</span>`)
     .join(' ');
@@ -1013,6 +1095,7 @@ function openDetailModal(songId) {
     <span class="detail-label">${t('編成', 'Ensemble')}</span><span class="detail-value">${escHtml(ensemble) || '—'}</span>
     <span class="detail-label">${t('使用楽器', 'Instruments')}</span><div class="detail-value instrument-pills">${instruments || '—'}</div>
     <span class="detail-label">${t('音源', 'Audio')}</span><div class="detail-value">${audioCell}</div>
+    <span class="detail-label">${t('楽譜', 'Score')}</span><div class="detail-value">${scoreCell}</div>
     <span class="detail-label">${t('ステータス', 'Status')}</span><span class="detail-value">${song.status || ''}</span>
     ${comment ? `<span class="detail-label">${t('コメント', "Composer's Note")}</span><div class="detail-value" style="white-space:pre-wrap; line-height:1.8;">${comment}</div>` : ''}
   `;
@@ -1178,6 +1261,7 @@ async function saveSong() {
     ensemble_ja: document.getElementById('edit-ensemble-ja').value,
     ensemble_en: document.getElementById('edit-ensemble-en').value,
     audio_url: document.getElementById('edit-audio-url').value,
+    score_url: State.editingSong?.score_url || '',
     comment: document.getElementById('edit-comment').value,
     comment_en: document.getElementById('edit-comment-en').value,
     instruments: State.editInstruments,
@@ -1188,7 +1272,15 @@ async function saveSong() {
     const res = await callGAS('apiSaveSong', State.adminToken, song);
     if (res.success) {
       // GAS保存成功後、メモリ上のState.songsを直接更新（GitHub反映待ち不要）
-      const savedSong = { ...song, id: res.id, instruments: State.editInstruments };
+      const savedSong = {
+        ...song,
+        id: res.id,
+        instruments: State.editInstruments,
+        scoreEntries: State.editingSong?.scoreEntries || [],
+        scores: (State.editingSong?.scoreEntries || []).map(e => ({
+          name: e.name, totalPages: e.totalPages, showPages: e.showPages,
+        })),
+      };
       const idx = State.songs.findIndex(s => s.id === savedSong.id);
       if (idx !== -1) {
         State.songs[idx] = savedSong;
@@ -1788,6 +1880,309 @@ async function rescanAudio() {
     result.textContent = 'Error: ' + e.message;
   }
   btn.disabled = false;
+}
+
+// ============================================================
+// 楽譜スキャン（管理者）
+// ============================================================
+async function rescanScore() {
+  if (!State.editingSong) return;
+  const btn = document.getElementById('btn-rescan-score');
+  const result = document.getElementById('rescan-score-result');
+  btn.disabled = true;
+  result.textContent = t('スキャン中...', 'Scanning...');
+  try {
+    const res = await callGAS('apiRescanScore', State.adminToken, State.editingSong.id);
+    if (res.success) {
+      // メモリ上のscoreEntriesを更新（管理用）
+      State.editingSong.scoreEntries = res.scoreEntries || [];
+      // State.songsのscoresも更新（公開用フィールド）
+      const song = State.songs.find(s => s.id === State.editingSong.id);
+      if (song) {
+        song.scoreEntries = res.scoreEntries || [];
+        song.scores = (res.scoreEntries || []).map(e => ({
+          name: e.name, totalPages: e.totalPages, showPages: e.showPages,
+        }));
+      }
+      result.textContent = t(`${res.count}件のPDFを取得しました`, `${res.count} PDF(s) found`);
+    } else {
+      result.textContent = 'Error: ' + res.error;
+    }
+  } catch(e) {
+    result.textContent = 'Error: ' + e.message;
+  }
+  btn.disabled = false;
+}
+
+// ============================================================
+// 楽譜閲覧モーダル（閲覧者・管理者共通）
+// ============================================================
+function openScoreModal(songId) {
+  const song = State.songs.find(s => s.id === songId);
+  if (!song) return;
+  // 閲覧モードではscores（公開用）を使う、管理モードはscoreEntriesも参照可
+  const entries = song.scores || [];
+  const visible = entries.filter(e => e.showPages > 0);
+
+  document.getElementById('score-modal-title').textContent =
+    (song.title || '') + ' — ' + t('楽譜一覧', 'Scores');
+
+  const ul = document.getElementById('score-list');
+  if (visible.length === 0) {
+    ul.innerHTML = `<li style="padding:12px; color:var(--text-sub);">楽譜はありません</li>`;
+  } else {
+    ul.innerHTML = visible.map((e, i) => `
+      <li class="instrument-list-item" style="cursor:default;">
+        <span style="flex:1;">📄 ${escHtml(e.name)}</span>
+        <span style="font-size:12px; color:var(--text-sub); margin-right:12px;">
+          ${t(`${e.showPages}ページまで閲覧可`, `Up to ${e.showPages} page(s)`)}</span>
+        <button class="btn-primary btn-sm" onclick="openPdfViewer('${songId}', ${i})">
+          ${t('開く', 'Open')}
+        </button>
+      </li>
+    `).join('');
+  }
+  document.getElementById('modal-score').classList.add('open');
+}
+
+function closeScoreModal() {
+  document.getElementById('modal-score').classList.remove('open');
+}
+
+// ============================================================
+// 楽譜編集モーダル（管理者）
+// ============================================================
+let scoreEditDragSrcIdx = null;
+
+function openScoreEditModal() {
+  if (!State.editingSong) return;
+  State.scoreEditSongId = State.editingSong.id;
+  // 管理用のscoreEntriesを使う（fileIdを含む）
+  State.scoreEditEntries = JSON.parse(JSON.stringify(
+    State.editingSong.scoreEntries || []
+  ));
+  document.getElementById('score-edit-modal-title').textContent =
+    (State.editingSong.title || '') + ' — ' + '楽譜リストを編集';
+  renderScoreEditList();
+  document.getElementById('modal-score-edit').classList.add('open');
+}
+
+function closeScoreEditModal() {
+  document.getElementById('modal-score-edit').classList.remove('open');
+}
+
+function renderScoreEditList() {
+  const ul = document.getElementById('score-edit-list');
+  const entries = State.scoreEditEntries;
+  if (entries.length === 0) {
+    ul.innerHTML = `<li style="padding:12px; color:var(--text-sub);">PDFがありません。「PDFを再スキャン」でDriveから取得してください。</li>`;
+    return;
+  }
+  ul.innerHTML = entries.map((e, i) => `
+    <li class="instrument-list-item"
+      draggable="true"
+      ondragstart="scoreEditDragStart(event, ${i})"
+      ondragover="event.preventDefault()"
+      ondrop="scoreEditDrop(event, ${i})"
+      ondragend="document.querySelectorAll('#score-edit-list li').forEach(el=>el.classList.remove('dragging'))"
+      style="cursor:grab; flex-wrap:wrap; gap:8px; align-items:center;">
+      <span style="color:var(--text-sub); font-size:18px; margin-right:4px;">⠿</span>
+      <span style="flex:1; min-width:120px;">📄 ${escHtml(e.name)}</span>
+      <span style="font-size:12px; color:var(--text-sub);">全${e.totalPages}p</span>
+      <label style="font-size:12px; display:flex; align-items:center; gap:6px; white-space:nowrap;">
+        閲覧上限:
+        <input type="number" min="0" max="${e.totalPages}" value="${e.showPages}"
+          style="width:56px;"
+          onchange="scoreEditChangeShowPages(${i}, this.value)"
+          oninput="scoreEditChangeShowPages(${i}, this.value)">
+        <span style="font-size:11px; color:var(--text-sub);">ページ</span>
+        ${e.manual ? '<span style="font-size:10px; color:var(--accent); font-weight:600;" title="手動設定済み">✎手動</span>' : ''}
+      </label>
+      <button class="btn-icon btn-sm" onclick="scoreEditRemove(${i})" title="削除">✕</button>
+    </li>
+  `).join('');
+}
+
+function scoreEditDragStart(e, idx) {
+  scoreEditDragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+}
+
+function scoreEditDrop(e, targetIdx) {
+  e.preventDefault();
+  if (scoreEditDragSrcIdx === null || scoreEditDragSrcIdx === targetIdx) return;
+  document.querySelectorAll('#score-edit-list li').forEach(el => el.classList.remove('dragging'));
+  const [moved] = State.scoreEditEntries.splice(scoreEditDragSrcIdx, 1);
+  State.scoreEditEntries.splice(targetIdx, 0, moved);
+  scoreEditDragSrcIdx = null;
+  renderScoreEditList();
+}
+
+function scoreEditChangeShowPages(idx, val) {
+  const v = parseInt(val);
+  if (isNaN(v)) return;
+  State.scoreEditEntries[idx].showPages = Math.max(0, Math.min(v, State.scoreEditEntries[idx].totalPages));
+  State.scoreEditEntries[idx].manual = true; // 手動変更フラグをセット
+}
+
+function scoreEditRemove(idx) {
+  State.scoreEditEntries.splice(idx, 1);
+  renderScoreEditList();
+}
+
+async function saveScoreList() {
+  const songId = State.scoreEditSongId;
+  if (!songId) return;
+  showLoading(true);
+  try {
+    const res = await callGAS('apiSaveScoreList', State.adminToken, songId, State.scoreEditEntries);
+    if (res.success) {
+      // メモリ更新
+      const song = State.songs.find(s => s.id === songId);
+      if (song) {
+        song.scoreEntries = res.scoreEntries || State.scoreEditEntries;
+        song.scores = (song.scoreEntries).map(e => ({
+          name: e.name, totalPages: e.totalPages, showPages: e.showPages,
+        }));
+      }
+      if (State.editingSong && State.editingSong.id === songId) {
+        State.editingSong.scoreEntries = song ? song.scoreEntries : State.scoreEditEntries;
+      }
+      showToast(t('楽譜リストを保存しました', 'Score list saved'));
+      closeScoreEditModal();
+      applyFilters();
+    } else {
+      showToast('Error: ' + res.error);
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+  showLoading(false);
+}
+
+// ============================================================
+// PDFビューア（GASプロキシ経由、showPages制限）
+// ============================================================
+let pdfState = {
+  songId: null,
+  idx: null,
+  currentPage: 1,
+  showPages: 0,
+  totalPages: 0,
+  pdfDoc: null,
+  loading: false,
+};
+
+async function openPdfViewer(songId, idx) {
+  // 楽譜閲覧モーダルを閉じてビューアを開く
+  closeScoreModal();
+  pdfState.songId = songId;
+  pdfState.idx = idx;
+  pdfState.currentPage = 1;
+  pdfState.pdfDoc = null;
+
+  // scoresから情報取得
+  const song = State.songs.find(s => s.id === songId);
+  const scores = song ? (song.scores || []) : [];
+  // 閲覧可能なものだけのインデックス
+  const visible = scores.filter(s => s.showPages > 0);
+  const entry = visible[idx];
+  if (!entry) return;
+
+  pdfState.showPages = entry.showPages;
+  pdfState.totalPages = entry.totalPages;
+
+  document.getElementById('pdf-viewer-title').textContent = '📄 ' + escHtml(entry.name);
+  document.getElementById('pdf-viewer-info').textContent =
+    t(`全${entry.totalPages}ページ中、${entry.showPages}ページまで閲覧できます`,
+      `${entry.showPages} of ${entry.totalPages} page(s) available`);
+  document.getElementById('pdf-canvas-wrap').innerHTML =
+    '<div id="pdf-loading" style="color:#fff; padding:32px;">📄 PDFを読み込み中...</div>';
+  document.getElementById('pdf-page-info').textContent = '';
+  document.getElementById('modal-pdf-viewer').classList.add('open');
+
+  // visibleのidxからState.songsのscores配列全体でのidxに変換
+  // GAS側にはscores全体でのidxを渡す（showPages=0含む全エントリ）
+  const allScores = song ? (song.scores || []) : [];
+  let realIdx = 0;
+  let visCount = 0;
+  for (let i = 0; i < allScores.length; i++) {
+    if (allScores[i].showPages > 0) {
+      if (visCount === idx) { realIdx = i; break; }
+      visCount++;
+    }
+  }
+
+  await loadPdfFromGas(songId, realIdx);
+}
+
+async function loadPdfFromGas(songId, realIdx) {
+  if (pdfState.loading) return;
+  pdfState.loading = true;
+  try {
+    const url = `${GAS_URL}?action=pdf&songId=${encodeURIComponent(songId)}&idx=${realIdx}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // base64からArrayBufferを生成してPDF.jsで表示
+    const binaryStr = atob(data.base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    pdfState.pdfDoc = await pdfjsLib.getDocument({ data: bytes.buffer }).promise;
+    pdfState.showPages = data.showPages;
+    pdfState.totalPages = data.totalPages;
+
+    await renderPdfPage(pdfState.currentPage);
+  } catch(e) {
+    document.getElementById('pdf-canvas-wrap').innerHTML =
+      `<div style="color:#fff; padding:32px;">⚠️ 読み込みエラー: ${escHtml(e.message)}</div>`;
+  }
+  pdfState.loading = false;
+}
+
+async function renderPdfPage(pageNum) {
+  if (!pdfState.pdfDoc) return;
+  pageNum = Math.max(1, Math.min(pageNum, pdfState.showPages));
+  pdfState.currentPage = pageNum;
+
+  const page = await pdfState.pdfDoc.getPage(pageNum);
+  const wrap = document.getElementById('pdf-canvas-wrap');
+  const scale = Math.min(wrap.clientWidth / page.getViewport({ scale: 1 }).width, 2.0);
+  const viewport = page.getViewport({ scale });
+
+  wrap.innerHTML = '';
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  canvas.style.maxWidth = '100%';
+  canvas.style.boxShadow = '0 2px 12px rgba(0,0,0,0.4)';
+  wrap.appendChild(canvas);
+
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+  // ページナビ更新
+  document.getElementById('pdf-page-info').textContent =
+    `${pageNum} / ${pdfState.showPages}`;
+  document.getElementById('btn-pdf-prev').disabled = pageNum <= 1;
+  document.getElementById('btn-pdf-next').disabled = pageNum >= pdfState.showPages;
+}
+
+async function pdfPrevPage() {
+  if (pdfState.currentPage > 1) await renderPdfPage(pdfState.currentPage - 1);
+}
+async function pdfNextPage() {
+  if (pdfState.currentPage < pdfState.showPages) await renderPdfPage(pdfState.currentPage + 1);
+}
+
+function closePdfViewer() {
+  document.getElementById('modal-pdf-viewer').classList.remove('open');
+  pdfState.pdfDoc = null;
 }
 
 // 曲名変更（シート+Drive）

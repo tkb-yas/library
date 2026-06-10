@@ -163,6 +163,9 @@ body.admin-mode {
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; padding: 12px; }
   .modal-overlay.open { display: flex; }
   .modal-overlay#modal-audio { z-index: 300; }
+  .modal-overlay#modal-score { z-index: 300; }
+  .modal-overlay#modal-score-edit { z-index: 400; }
+  .modal-overlay#modal-pdf-viewer { z-index: 400; }
   .modal { background: var(--surface); border-radius: 12px; padding: 20px; width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
   .modal-title { flex: 1; font-size: 17px; font-weight: 700; min-width: 0; overflow: hidden; }
   .detail-grid { display: grid; grid-template-columns: 100px 1fr; gap: 8px 12px; }
@@ -777,19 +780,6 @@ async function loadInitialData() {
     State.masterCategories = JSON.parse(JSON.stringify(State.masterData.categories));
     State.masterInstruments = JSON.parse(JSON.stringify(State.masterData.instruments));
 
-    // 管理者モードの場合はGASから完全データ（scoreEntries含む）を取得して補完
-    if (State.isAdmin) {
-      try {
-        const fullSongs = await callGAS('apiGetAllSongs');
-        if (Array.isArray(fullSongs)) {
-          State.songs = State.songs.map(s => {
-            const full = fullSongs.find(f => f.id === s.id);
-            return full ? { ...s, scoreEntries: full.scoreEntries || [], folder_id: full.folder_id || '' } : s;
-          });
-        }
-      } catch(e) { /* 失敗してもJSONデータで継続 */ }
-    }
-
     applyFilters();
     renderFilterCatTabs();
     renderMaster();
@@ -1115,7 +1105,7 @@ function editFromDetail() {
 // ============================================================
 // 編集モーダル
 // ============================================================
-function openEditModal(songId) {
+async function openEditModal(songId) {
   const isNew = songId === null;
   State.editingSong = isNew ? null : State.songs.find(s => s.id === songId);
   const song = State.editingSong || {};
@@ -1141,6 +1131,9 @@ function openEditModal(songId) {
   // タグ表示エリアをリセット
   const tagArea = document.getElementById('tag-suggestions');
   if (tagArea) { tagArea.innerHTML = ''; tagArea.style.display = 'none'; }
+  // PDFスキャン結果表示をリセット
+  const scoreResult = document.getElementById('rescan-score-result');
+  if (scoreResult) scoreResult.textContent = '';
 
   // 編集前スナップショットを記録（枠外クリック時の変更検知用）
   State.editingSnapshot = JSON.stringify({
@@ -1156,6 +1149,20 @@ function openEditModal(songId) {
   });
 
   document.getElementById('modal-edit').classList.add('open');
+
+  // scoreEntriesがまだ未取得の場合だけGASから取得（lazyロード・非ブロック）
+  if (!isNew && !song.scoreEntries) {
+    try {
+      const full = await callGAS('apiGetSong', songId);
+      if (full && State.editingSong && State.editingSong.id === songId) {
+        State.editingSong.scoreEntries = full.scoreEntries || [];
+        State.editingSong.folder_id   = full.folder_id   || song.folder_id || '';
+        // State.songsにも反映
+        const s = State.songs.find(s => s.id === songId);
+        if (s) { s.scoreEntries = full.scoreEntries || []; s.folder_id = full.folder_id || ''; }
+      }
+    } catch(e) { /* 取得失敗しても操作は続行 */ }
+  }
 }
 
 function closeEditModal() {
@@ -2006,7 +2013,8 @@ function renderScoreEditList() {
 function scoreEditDragStart(e, idx) {
   scoreEditDragSrcIdx = idx;
   e.dataTransfer.effectAllowed = 'move';
-  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+  const el = e.currentTarget;
+  setTimeout(() => el.classList.add('dragging'), 0);
 }
 
 function scoreEditDrop(e, targetIdx) {

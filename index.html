@@ -856,6 +856,22 @@ async function callGAS(fnName, ...args) {
   return data;
 }
 
+// DriveフォルダをGASから folder_id を取得して開く（公開JSONには含まれないため）
+async function openDriveFolder(songId, btn) {
+  btn.disabled = true;
+  try {
+    const song = await callGAS('apiGetSong', songId);
+    if (song && song.folder_id) {
+      window.open('https://drive.google.com/drive/folders/' + song.folder_id, '_blank');
+    } else {
+      showToast(t('フォルダIDが取得できませんでした', 'Could not retrieve folder ID'));
+    }
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
 // ============================================================
 // 楽曲一覧・検索
 // ============================================================
@@ -1901,9 +1917,7 @@ async function rescanScore() {
   try {
     const res = await callGAS('apiRescanScore', State.adminToken, State.editingSong.id);
     if (res.success) {
-      // メモリ上のscoreEntriesを更新（管理用）
       State.editingSong.scoreEntries = res.scoreEntries || [];
-      // State.songsのscoresも更新（公開用フィールド）
       const song = State.songs.find(s => s.id === State.editingSong.id);
       if (song) {
         song.scoreEntries = res.scoreEntries || [];
@@ -1912,6 +1926,7 @@ async function rescanScore() {
         }));
       }
       result.textContent = t(`${res.count}件のPDFを取得しました`, `${res.count} PDF(s) found`);
+      if (res.warning) showToast('⚠️ ' + res.warning);
     } else {
       result.textContent = 'Error: ' + res.error;
     }
@@ -2046,7 +2061,6 @@ async function saveScoreList() {
   try {
     const res = await callGAS('apiSaveScoreList', State.adminToken, songId, State.scoreEditEntries);
     if (res.success) {
-      // メモリ更新
       const song = State.songs.find(s => s.id === songId);
       if (song) {
         song.scoreEntries = res.scoreEntries || State.scoreEditEntries;
@@ -2057,7 +2071,8 @@ async function saveScoreList() {
       if (State.editingSong && State.editingSong.id === songId) {
         State.editingSong.scoreEntries = song ? song.scoreEntries : State.scoreEditEntries;
       }
-      showToast(t('楽譜リストを保存しました', 'Score list saved'));
+      if (res.warning) showToast('⚠️ ' + res.warning);
+      else showToast(t('楽譜リストを保存しました', 'Score list saved'));
       closeScoreEditModal();
       applyFilters();
     } else {

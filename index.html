@@ -970,7 +970,7 @@ const audioEntries = parseAudioEntries(song.audio_url);
     const actionCell = State.isAdmin ? `
       <td onclick="event.stopPropagation()" style="white-space:nowrap">
         <button class="btn-icon btn-sm" title="編集" onclick="openEditModal('${song.id}')">✏️</button>
-        ${song.folder_id ? `<a href="https://drive.google.com/drive/folders/${song.folder_id}" target="_blank"><button class="btn-icon btn-sm" title="Driveを開く">📁</button></a>` : ''}
+        <button class="btn-icon btn-sm" title="Driveを開く" onclick="openDriveFolder('${song.id}', this)">📁</button>
       </td>
     ` : '';
 

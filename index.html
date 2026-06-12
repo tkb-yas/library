@@ -160,7 +160,18 @@ body.admin-mode {
   /* ============================================================
      詳細モーダル
   ============================================================ */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; padding: 12px; }
+  /* スマホ横向きヒント：閲覧モード＆縦持ち時のみ表示 */
+  #mobile-rotate-hint {
+    display: none;
+    font-size: 12px;
+    color: var(--text-sub);
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+  @media (max-width: 600px) and (orientation: portrait) {
+    body:not(.admin-mode) #mobile-rotate-hint { display: block; }
+  }
   .modal-overlay.open { display: flex; }
   .modal-overlay#modal-audio { z-index: 300; }
   .modal-overlay#modal-score { z-index: 300; }
@@ -312,6 +323,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
   <!-- ========== 楽曲一覧ページ ========== -->
   <div class="page active" id="page-songs">
     <div class="card">
+      <div id="mobile-rotate-hint">📱 スマートフォンは画面を横にすると見やすくなります</div>
       <div id="search-area">
         <div class="form-group" style="flex:1; min-width:200px;">
           <input type="text" id="search-text" placeholder="曲名で検索 / Search by title" oninput="applyFilters()">
@@ -1275,7 +1287,9 @@ function removeEditInstr(idx) {
 }
 
 async function saveSong() {
-  const song = {
+  const isNew = !State.editingSong?.id;
+
+  const songData = {
     id: State.editingSong?.id || '',
     folder_id: State.editingSong?.folder_id || '',
     title: document.getElementById('edit-title').value,
@@ -1289,36 +1303,82 @@ async function saveSong() {
     comment: document.getElementById('edit-comment').value,
     comment_en: document.getElementById('edit-comment-en').value,
     instruments: State.editInstruments,
+    last_updated_check: State.editingSong?.last_updated || '', // 衝突検知用
   };
-  
-  showLoading(true);
-  try {
-    const res = await callGAS('apiSaveSong', State.adminToken, song);
-    if (res.success) {
-      // GAS保存成功後、メモリ上のState.songsを直接更新（GitHub反映待ち不要）
-      const savedSong = {
-        ...song,
-        id: res.id,
-        instruments: State.editInstruments,
-        scoreEntries: State.editingSong?.scoreEntries || [],
-        scores: (State.editingSong?.scoreEntries || []).map(e => ({
-          name: e.name, totalPages: e.totalPages, showPages: e.showPages,
-        })),
-      };
-      const idx = State.songs.findIndex(s => s.id === savedSong.id);
-      if (idx !== -1) {
-        State.songs[idx] = savedSong;
+
+  // ── 新規追加：GASのIDが必要なためブロッキング ──
+  if (isNew) {
+    showLoading(true);
+    try {
+      const res = await callGAS('apiSaveSong', State.adminToken, songData);
+      if (res.success) {
+        const newSong = {
+          ...songData,
+          id: res.id,
+          instruments: State.editInstruments,
+          scoreEntries: [],
+          scores: [],
+        };
+        State.songs.push(newSong);
+        showToast(t('追加しました', 'Added'));
+        closeEditModal();
+        applyFilters();
       } else {
-        State.songs.push(savedSong);
+        showToast('Error: ' + res.error);
+      }
+    } catch(e) { showToast('Error: ' + e.message); }
+    showLoading(false);
+    return;
+  }
+
+  // ── 既存曲：楽観的UI ──
+  const songIdx = State.songs.findIndex(s => s.id === songData.id);
+  const rollback = songIdx !== -1 ? JSON.parse(JSON.stringify(State.songs[songIdx])) : null;
+
+  // 即座にメモリを更新
+  if (songIdx !== -1) {
+    const scoreEntries = State.editingSong?.scoreEntries || State.songs[songIdx].scoreEntries || [];
+    State.songs[songIdx] = {
+      ...State.songs[songIdx],
+      ...songData,
+      instruments: State.editInstruments,
+      scoreEntries,
+      scores: scoreEntries.map(e => ({
+        name: e.name, totalPages: e.totalPages, showPages: e.showPages,
+      })),
+    };
+  }
+
+  closeEditModal();
+  applyFilters();
+  showToast(t('保存中...', 'Saving…'), 60000); // GAS完了時に上書きされる
+
+  // GASへの書き込みはバックグラウンドで実行
+  callGAS('apiSaveSong', State.adminToken, songData).then(res => {
+    if (res.success) {
+      // last_updatedをGASの実際の値に更新
+      if (songIdx !== -1) {
+        State.songs[songIdx].last_updated = res.last_updated || new Date().toISOString();
       }
       showToast(t('保存しました', 'Saved'));
-      closeEditModal();
       applyFilters();
+    } else if (res.conflict) {
+      // 衝突：ロールバックして警告
+      if (rollback !== null && songIdx !== -1) State.songs[songIdx] = rollback;
+      applyFilters();
+      showToast(t('⚠️ 別のタブで変更されています。ページを再読み込みしてください。',
+        '⚠️ Conflict detected. Please reload.'), 8000);
     } else {
-      showToast('Error: ' + res.error);
+      // その他エラー：ロールバック
+      if (rollback !== null && songIdx !== -1) State.songs[songIdx] = rollback;
+      applyFilters();
+      showToast(t('保存に失敗しました: ', 'Save failed: ') + res.error, 6000);
     }
-  } catch(e) { showToast('Error: ' + e.message); }
-  showLoading(false);
+  }).catch(e => {
+    if (rollback !== null && songIdx !== -1) State.songs[songIdx] = rollback;
+    applyFilters();
+    showToast(t('保存に失敗しました: ', 'Save failed: ') + e.message, 6000);
+  });
 }
 
 async function deleteSong() {
@@ -1810,12 +1870,12 @@ function showLoading(show) {
 }
 
 let toastTimer;
-function showToast(msg) {
+function showToast(msg, duration = 3000) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
 }
 
 function escHtml(str) {

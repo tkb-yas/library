@@ -1167,13 +1167,14 @@ async function openEditModal(songId) {
   document.getElementById('modal-edit').classList.add('open');
 
   // scoreEntriesがまだ未取得の場合だけGASから取得（lazyロード・非ブロック）
+  // 完了時点でrescanなどにより既にscoreEntriesが設定されていたら上書きしない
   if (!isNew && !song.scoreEntries) {
     try {
       const full = await callGAS('apiGetSong', songId);
-      if (full && State.editingSong && State.editingSong.id === songId) {
+      if (full && State.editingSong && State.editingSong.id === songId
+          && !State.editingSong.scoreEntries) {
         State.editingSong.scoreEntries = full.scoreEntries || [];
         State.editingSong.folder_id   = full.folder_id   || song.folder_id || '';
-        // State.songsにも反映
         const s = State.songs.find(s => s.id === songId);
         if (s) { s.scoreEntries = full.scoreEntries || []; s.folder_id = full.folder_id || ''; }
       }

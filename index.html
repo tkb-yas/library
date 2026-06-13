@@ -306,7 +306,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 <!-- ヘッダー -->
 <div id="header">
   <div id="header-inner">
-    <h1 id="site-title">徳備<span id="token-change-trigger" onclick="openTokenChangeModal()" title=""> </span>康純 作品リスト / List of Works by TOKUBI, Yasuzumi <span id="composer-name"></span></h1>
+    <h1 id="site-title"><span id="site-title-ja">徳備<span id="token-change-trigger" onclick="openTokenChangeModal()" title=""> </span>康純 作品リスト</span><span id="site-title-en" style="display:none">List of Works by TOKUBI, Yasuzumi</span> <span id="composer-name"></span></h1>
     <div>
       <button class="lang-btn active" id="btn-ja" onclick="setLang('ja')">JP</button>
       <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -881,9 +881,9 @@ function applyLang() {
   });
   document.getElementById('mode-label').textContent =
     State.isAdmin ? t('管理モード', 'Admin Mode') : t('閲覧モード', 'View Mode');
-  // タイトルを言語に合わせて切り替え
-  document.getElementById('site-title').childNodes[0].textContent =
-    State.lang === 'ja' ? '徳備 康純 作品リスト ' : 'List of Works by TOKUBI, Yasuzumi ';
+  // タイトルを言語に合わせてJA/ENスパンで切り替え
+  document.getElementById('site-title-ja').style.display = State.lang === 'ja' ? '' : 'none';
+  document.getElementById('site-title-en').style.display = State.lang === 'en' ? '' : 'none';
 }
 
 // ============================================================

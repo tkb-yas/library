@@ -162,10 +162,8 @@ body.admin-mode {
   ============================================================ */
   /* トークン変更用不可視トリガー */
   #token-change-trigger {
-    display: inline-block;
-    width: 36px;
-    height: 20px;
-    margin-left: 12px;
+    display: inline;
+    padding: 0 6px;
     cursor: default;
     user-select: none;
   }
@@ -308,7 +306,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 <!-- ヘッダー -->
 <div id="header">
   <div id="header-inner">
-    <h1 id="site-title">徳備 康純 作品リスト / List of Works by TOKUBI, Yasuzumi <span id="composer-name"></span><span id="token-change-trigger" onclick="openTokenChangeModal()" title=""></span></h1>
+    <h1 id="site-title">徳備<span id="token-change-trigger" onclick="openTokenChangeModal()" title=""> </span>康純 作品リスト / List of Works by TOKUBI, Yasuzumi <span id="composer-name"></span></h1>
     <div>
       <button class="lang-btn active" id="btn-ja" onclick="setLang('ja')">JP</button>
       <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>

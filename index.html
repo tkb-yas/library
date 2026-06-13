@@ -163,7 +163,7 @@ body.admin-mode {
   /* トークン変更用不可視トリガー */
   #token-change-trigger {
     display: inline;
-    padding: 0 6px;
+    padding: 0 3px;
     cursor: default;
     user-select: none;
   }
@@ -562,7 +562,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
       <input type="password" id="token-current" class="form-input" autocomplete="current-password">
     </div>
     <div class="form-row">
-      <label class="form-label">新しいトークン（8文字以上）</label>
+      <label class="form-label">新しいトークン</label>
       <input type="password" id="token-new" class="form-input" autocomplete="new-password">
     </div>
     <div class="form-row">
@@ -2364,8 +2364,8 @@ async function changeAdminToken() {
     resultEl.textContent = '新しいトークンが一致しません';
     return;
   }
-  if (newToken.length < 8) {
-    resultEl.textContent = '新しいトークンは8文字以上にしてください';
+  if (newToken.length === 0) {
+    resultEl.textContent = '新しいトークンを入力してください';
     return;
   }
 

@@ -160,6 +160,15 @@ body.admin-mode {
   /* ============================================================
      詳細モーダル
   ============================================================ */
+  /* トークン変更用不可視トリガー */
+  #token-change-trigger {
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    margin-left: 12px;
+    cursor: default;
+    user-select: none;
+  }
   /* スマホ横向きヒント：閲覧モード＆縦持ち時のみ表示 */
   #mobile-rotate-hint {
     display: none;
@@ -299,7 +308,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 <!-- ヘッダー -->
 <div id="header">
   <div id="header-inner">
-    <h1 id="site-title">徳備 康純 作品リスト / List of Works by TOKUBI, Yasuzumi <span id="composer-name"></span></h1>
+    <h1 id="site-title">徳備 康純 作品リスト / List of Works by TOKUBI, Yasuzumi <span id="composer-name"></span><span id="token-change-trigger" onclick="openTokenChangeModal()" title=""></span></h1>
     <div>
       <button class="lang-btn active" id="btn-ja" onclick="setLang('ja')">JP</button>
       <button class="lang-btn" id="btn-en" onclick="setLang('en')">EN</button>
@@ -543,6 +552,37 @@ th.sort-desc .sort-icon::after { content: '▼'; }
   </div>
 </div>
 
+<!-- ========== トークン変更モーダル ========== -->
+<div class="modal-overlay" id="modal-token-change" style="z-index:500;">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">管理者トークンの変更</div>
+      <button class="modal-close" onclick="closeTokenChangeModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">現在のトークン</label>
+      <input type="password" id="token-current" class="form-input" autocomplete="current-password">
+    </div>
+    <div class="form-row">
+      <label class="form-label">新しいトークン（8文字以上）</label>
+      <input type="password" id="token-new" class="form-input" autocomplete="new-password">
+    </div>
+    <div class="form-row">
+      <label class="form-label">新しいトークン（確認）</label>
+      <input type="password" id="token-new2" class="form-input" autocomplete="new-password">
+    </div>
+    <div id="token-change-result" style="font-size:13px; color:var(--text-sub); min-height:20px; margin-top:4px;"></div>
+    <div id="token-new-url-wrap" style="display:none; margin-top:10px; padding:10px; background:var(--surface2); border-radius:var(--radius); font-size:12px; word-break:break-all;">
+      <div style="color:var(--text-sub); margin-bottom:4px;">新しい管理URLをブックマークしてください：</div>
+      <span id="token-new-url" style="color:var(--accent);"></span>
+    </div>
+    <div style="margin-top:16px; display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn-secondary btn-sm" onclick="closeTokenChangeModal()">キャンセル</button>
+      <button class="btn-primary btn-sm" id="btn-change-token" onclick="changeAdminToken()">変更する</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== 音源モーダル ========== -->
 <div class="modal-overlay" id="modal-audio">
   <div class="modal" style="max-width:480px;">
@@ -708,13 +748,31 @@ const State = {
 // 起動処理
 // ============================================================
 window.onload = function() {
-  // URLパラメータからtokenを取得（?token=claude でアクセスすると管理モード）
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token') || '';
-  State.isAdmin = token === 'claude'; // ← GASのCONFIG.ADMIN_TOKENと同じ値にする
-  State.adminToken = State.isAdmin ? token : '';
-  applyAdminUI();
-  loadInitialData();
+  State.adminToken = token;
+
+  if (token) {
+    // トークンがあれば即座に管理UIを表示（楽観的）
+    State.isAdmin = true;
+    applyAdminUI();
+    loadInitialData();
+    // バックグラウンドでGASに検証依頼
+    callGAS('apiValidateToken', token).then(res => {
+      if (!res.valid) {
+        // 無効なら管理UIを取り消す
+        State.isAdmin = false;
+        State.adminToken = '';
+        applyAdminUI();
+        applyFilters();
+        showToast('トークンが無効です', 5000);
+      }
+    }).catch(() => { /* ネットワークエラー時はそのまま */ });
+  } else {
+    State.isAdmin = false;
+    applyAdminUI();
+    loadInitialData();
+  }
   
     // モーダル範囲外クリックで閉じる
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -725,6 +783,7 @@ window.onload = function() {
       if (overlay.id === 'modal-score') closeScoreModal();
       if (overlay.id === 'modal-score-edit') closeScoreEditModal();
       if (overlay.id === 'modal-pdf-viewer') closePdfViewer();
+      if (overlay.id === 'modal-token-change') closeTokenChangeModal();
       if (overlay.id === 'modal-edit') {
         if (hasEditChanges()) {
           if (confirm('編集中の内容は破棄されます。閉じてよいですか？')) {
@@ -869,17 +928,22 @@ async function callGAS(fnName, ...args) {
   return data;
 }
 
-// DriveフォルダをGASから folder_id を取得して開く（公開JSONには含まれないため）
+// DriveフォルダをGASから folder_id を取得して開く
+// window.open() をクリック直後（同期的）に呼び出すことでポップアップブロックを回避
 async function openDriveFolder(songId, btn) {
   btn.disabled = true;
+  // ユーザー操作と同期したタイミングで空ウィンドウを先に開く
+  const win = window.open('', '_blank');
   try {
     const song = await callGAS('apiGetSong', songId);
     if (song && song.folder_id) {
-      window.open('https://drive.google.com/drive/folders/' + song.folder_id, '_blank');
+      win.location.href = 'https://drive.google.com/drive/folders/' + song.folder_id;
     } else {
+      win.close();
       showToast(t('フォルダIDが取得できませんでした', 'Could not retrieve folder ID'));
     }
   } catch(e) {
+    win.close();
     showToast('Error: ' + e.message);
   }
   btn.disabled = false;
@@ -2273,6 +2337,61 @@ async function pdfNextPage() {
 function closePdfViewer() {
   document.getElementById('modal-pdf-viewer').classList.remove('open');
   pdfState.pdfDoc = null;
+}
+
+// ============================================================
+// トークン変更モーダル
+// ============================================================
+function openTokenChangeModal() {
+  document.getElementById('token-current').value = '';
+  document.getElementById('token-new').value = '';
+  document.getElementById('token-new2').value = '';
+  document.getElementById('token-change-result').textContent = '';
+  document.getElementById('token-new-url-wrap').style.display = 'none';
+  document.getElementById('btn-change-token').disabled = false;
+  document.getElementById('modal-token-change').classList.add('open');
+}
+
+function closeTokenChangeModal() {
+  document.getElementById('modal-token-change').classList.remove('open');
+}
+
+async function changeAdminToken() {
+  const current  = document.getElementById('token-current').value;
+  const newToken = document.getElementById('token-new').value.trim();
+  const newToken2= document.getElementById('token-new2').value.trim();
+  const resultEl = document.getElementById('token-change-result');
+
+  if (newToken !== newToken2) {
+    resultEl.textContent = '新しいトークンが一致しません';
+    return;
+  }
+  if (newToken.length < 8) {
+    resultEl.textContent = '新しいトークンは8文字以上にしてください';
+    return;
+  }
+
+  const btn = document.getElementById('btn-change-token');
+  btn.disabled = true;
+  resultEl.textContent = '変更中...';
+
+  try {
+    const res = await callGAS('apiChangeAdminToken', current, newToken);
+    if (res.success) {
+      resultEl.textContent = '変更しました。新しいURLをブックマークしてください。';
+      const newUrl = location.origin + location.pathname + '?token=' + encodeURIComponent(newToken);
+      document.getElementById('token-new-url').textContent = newUrl;
+      document.getElementById('token-new-url-wrap').style.display = 'block';
+      // 現セッションのトークンも更新
+      State.adminToken = newToken;
+    } else {
+      resultEl.textContent = 'エラー: ' + res.error;
+      btn.disabled = false;
+    }
+  } catch(e) {
+    resultEl.textContent = 'エラー: ' + e.message;
+    btn.disabled = false;
+  }
 }
 
 // 曲名変更（シート+Drive）

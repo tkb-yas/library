@@ -503,7 +503,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
     </div>
     <ul class="instrument-list" id="score-list"></ul>
     <div style="margin-top:16px; text-align:right;">
-      <button class="btn-secondary btn-sm" onclick="closeScoreModal()">閉じる</button>
+      <button class="btn-secondary btn-sm" onclick="closeScoreModal()" data-ja="閉じる" data-en="Close">閉じる</button>
     </div>
   </div>
 </div>
@@ -533,20 +533,20 @@ th.sort-desc .sort-icon::after { content: '▼'; }
 <div class="modal-overlay" id="modal-pdf-viewer">
   <div class="modal" style="max-width:700px; max-height:90vh; display:flex; flex-direction:column;">
     <div class="modal-header">
-      <div class="modal-title" id="pdf-viewer-title">楽譜プレビュー</div>
+      <div class="modal-title" id="pdf-viewer-title" data-ja="楽譜プレビュー" data-en="Score Preview">楽譜プレビュー</div>
       <button class="modal-close" onclick="closePdfViewer()">✕</button>
     </div>
     <div id="pdf-viewer-info" style="font-size:12px; color:var(--text-sub); margin-bottom:8px;"></div>
     <div id="pdf-canvas-wrap" style="overflow-y:auto; flex:1; background:#888; border-radius:var(--radius); padding:8px; text-align:center;">
-      <div id="pdf-loading" style="color:#fff; padding:32px;">読み込み中...</div>
+      <div id="pdf-loading" style="color:#fff; padding:32px;" data-ja="読み込み中..." data-en="Loading...">読み込み中...</div>
     </div>
     <div style="display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;">
-      <button class="btn-secondary btn-sm" onclick="pdfPrevPage()" id="btn-pdf-prev">◀ 前</button>
+      <button class="btn-secondary btn-sm" onclick="pdfPrevPage()" id="btn-pdf-prev" data-ja="◀ 前" data-en="◀ Prev">◀ 前</button>
       <span id="pdf-page-info" style="font-size:13px; min-width:80px; text-align:center;"></span>
-      <button class="btn-secondary btn-sm" onclick="pdfNextPage()" id="btn-pdf-next">次 ▶</button>
+      <button class="btn-secondary btn-sm" onclick="pdfNextPage()" id="btn-pdf-next" data-ja="次 ▶" data-en="Next ▶">次 ▶</button>
       <span style="flex:1"></span>
-      <button class="btn-secondary btn-sm" onclick="backToScoreList()" id="btn-pdf-back" style="display:none;">📄 一覧に戻る</button>
-      <button class="btn-secondary btn-sm" onclick="closePdfViewer()">閉じる</button>
+      <button class="btn-secondary btn-sm" onclick="backToScoreList()" id="btn-pdf-back" style="display:none;" data-ja="📄 一覧に戻る" data-en="📄 Back to list">📄 一覧に戻る</button>
+      <button class="btn-secondary btn-sm" onclick="closePdfViewer()" data-ja="閉じる" data-en="Close">閉じる</button>
     </div>
   </div>
 </div>
@@ -2084,7 +2084,7 @@ function openScoreModal(songId) {
 
   const ul = document.getElementById('score-list');
   if (visible.length === 0) {
-    ul.innerHTML = `<li style="padding:12px; color:var(--text-sub);">楽譜はありません</li>`;
+    ul.innerHTML = `<li style="padding:12px; color:var(--text-sub);">${t('楽譜はありません', 'No scores available')}</li>`;
   } else {
     ul.innerHTML = visible.map((e, i) => `
       <li class="instrument-list-item" style="cursor:default;">
@@ -2254,7 +2254,7 @@ async function openPdfViewer(songId, idx) {
     t(`全${entry.totalPages}ページ中、${entry.showPages}ページまで閲覧できます`,
       `${entry.showPages} of ${entry.totalPages} page(s) available`);
   document.getElementById('pdf-canvas-wrap').innerHTML =
-    '<div id="pdf-loading" style="color:#fff; padding:32px;">📄 PDFを読み込み中...</div>';
+    `<div id="pdf-loading" style="color:#fff; padding:32px;">📄 ${t('PDFを読み込み中...', 'Loading PDF...')}</div>`;
   document.getElementById('pdf-page-info').textContent = '';
   // 複数PDFがある場合のみ「一覧に戻る」ボタンを表示
   document.getElementById('btn-pdf-back').style.display = visible.length > 1 ? '' : 'none';
@@ -2306,7 +2306,7 @@ async function loadPdfFromGas(songId, realIdx) {
     await renderPdfPage(pdfState.currentPage);
   } catch(e) {
     document.getElementById('pdf-canvas-wrap').innerHTML =
-      `<div style="color:#fff; padding:32px;">⚠️ 読み込みエラー: ${escHtml(e.message)}</div>`;
+      `<div style="color:#fff; padding:32px;">⚠️ ${t('読み込みエラー', 'Load error')}: ${escHtml(e.message)}</div>`;
   }
   pdfState.loading = false;
 }

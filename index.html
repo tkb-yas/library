@@ -545,6 +545,7 @@ th.sort-desc .sort-icon::after { content: '▼'; }
       <span id="pdf-page-info" style="font-size:13px; min-width:80px; text-align:center;"></span>
       <button class="btn-secondary btn-sm" onclick="pdfNextPage()" id="btn-pdf-next">次 ▶</button>
       <span style="flex:1"></span>
+      <button class="btn-secondary btn-sm" onclick="backToScoreList()" id="btn-pdf-back" style="display:none;">📄 一覧に戻る</button>
       <button class="btn-secondary btn-sm" onclick="closePdfViewer()">閉じる</button>
     </div>
   </div>
@@ -875,6 +876,12 @@ function t(ja, en) {
   return State.lang === 'ja' ? ja : en;
 }
 
+// 楽曲タイトルを現在の表示言語に合わせて返す（英語タイトル未設定時は日本語にフォールバック）
+function songTitle(song) {
+  if (!song) return '';
+  return State.lang === 'ja' ? (song.title || '') : (song.title_en || song.title || '');
+}
+
 function applyLang() {
   document.querySelectorAll('[data-ja]').forEach(el => {
     el.textContent = State.lang === 'ja' ? el.dataset.ja : el.dataset.en;
@@ -964,9 +971,10 @@ function applyFilters() {
 
     // テキスト検索
     const title = (song.title || '').toLowerCase();
+    const titleEn = (song.title_en || '').toLowerCase();
     const ensJa = (song.ensemble_ja || '').toLowerCase();
     const ensEn = (song.ensemble_en || '').toLowerCase();
-    if (text && !title.includes(text) && !ensJa.includes(text) && !ensEn.includes(text)) return false;
+    if (text && !title.includes(text) && !titleEn.includes(text) && !ensJa.includes(text) && !ensEn.includes(text)) return false;
 
     // 作曲年
     if (song.year && (song.year < yearFrom || song.year > yearTo)) return false;
@@ -1072,9 +1080,10 @@ const audioEntries = parseAudioEntries(song.audio_url);
       ? '—'
       : `<button class="btn-secondary btn-sm" onclick="event.stopPropagation(); openScoreModal('${song.id}')" style="padding:2px 6px; font-size:14px; line-height:1.4;">📄<sub style="font-size:9px; margin-left:1px;">${visibleScores.length}</sub></button>`;
 
+    const displayTitle = songTitle(song);
     return `<tr onclick="openDetailModal('${song.id}')" style="cursor:pointer" data-id="${song.id}">
       ${adminCells}
-      <td><strong>${escHtml(song.title || '')}</strong></td>
+      <td><strong>${escHtml(displayTitle)}</strong></td>
       <td>${song.year || ''}</td>
       <td>${escHtml(ensemble)}</td>
       <td>${partsCell}</td>
@@ -1154,7 +1163,7 @@ function openDetailModal(songId) {
   if (!song) return;
   State.detailSong = song;
 
-  document.getElementById('detail-title').textContent = song.title || '';
+  document.getElementById('detail-title').textContent = songTitle(song);
   const ensemble = State.lang === 'ja' ? (song.ensemble_ja || '') : (song.ensemble_en || song.ensemble_ja || '');
   const audioEntries = parseAudioEntries(song.audio_url);
     const audioCell = audioEntries.length === 0
@@ -2071,7 +2080,7 @@ function openScoreModal(songId) {
   const visible = entries.filter(e => e.showPages > 0);
 
   document.getElementById('score-modal-title').textContent =
-    (song.title || '') + ' — ' + t('楽譜一覧', 'Scores');
+    songTitle(song) + ' — ' + t('楽譜一覧', 'Scores');
 
   const ul = document.getElementById('score-list');
   if (visible.length === 0) {
@@ -2108,7 +2117,7 @@ function openScoreEditModal() {
     State.editingSong.scoreEntries || []
   ));
   document.getElementById('score-edit-modal-title').textContent =
-    (State.editingSong.title || '') + ' — ' + '楽譜リストを編集';
+    songTitle(State.editingSong) + ' — ' + '楽譜リストを編集';
   renderScoreEditList();
   document.getElementById('modal-score-edit').classList.add('open');
 }
@@ -2215,6 +2224,7 @@ let pdfState = {
   currentPage: 1,
   showPages: 0,
   totalPages: 0,
+  visibleCount: 0,
   pdfDoc: null,
   loading: false,
 };
@@ -2237,6 +2247,7 @@ async function openPdfViewer(songId, idx) {
 
   pdfState.showPages = entry.showPages;
   pdfState.totalPages = entry.totalPages;
+  pdfState.visibleCount = visible.length;
 
   document.getElementById('pdf-viewer-title').textContent = '📄 ' + escHtml(entry.name);
   document.getElementById('pdf-viewer-info').textContent =
@@ -2245,6 +2256,8 @@ async function openPdfViewer(songId, idx) {
   document.getElementById('pdf-canvas-wrap').innerHTML =
     '<div id="pdf-loading" style="color:#fff; padding:32px;">📄 PDFを読み込み中...</div>';
   document.getElementById('pdf-page-info').textContent = '';
+  // 複数PDFがある場合のみ「一覧に戻る」ボタンを表示
+  document.getElementById('btn-pdf-back').style.display = visible.length > 1 ? '' : 'none';
   document.getElementById('modal-pdf-viewer').classList.add('open');
 
   // visibleのidxからState.songsのscores配列全体でのidxに変換
@@ -2335,6 +2348,12 @@ async function pdfNextPage() {
 function closePdfViewer() {
   document.getElementById('modal-pdf-viewer').classList.remove('open');
   pdfState.pdfDoc = null;
+}
+
+// PDFビューアを閉じて楽譜一覧モーダルに戻る
+function backToScoreList() {
+  closePdfViewer();
+  if (pdfState.songId) openScoreModal(pdfState.songId);
 }
 
 // ============================================================
@@ -2432,7 +2451,7 @@ function openAudioModal(songId, editable) {
   audioModalFromEdit = false;
   audioModalEntries = parseAudioEntries(song.audio_url);
 
-  document.getElementById('audio-modal-title').textContent = song.title + ' — ' + t('音源一覧', 'Audio Files');
+  document.getElementById('audio-modal-title').textContent = songTitle(song) + ' — ' + t('音源一覧', 'Audio Files');
   document.getElementById('btn-save-audio-order').style.display = editable ? '' : 'none';
   renderAudioList();
   document.getElementById('modal-audio').classList.add('open');

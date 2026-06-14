@@ -2455,7 +2455,7 @@ function renderAudioList() {
   ul.innerHTML = audioModalEntries.map((entry, i) => {
     const handle = audioModalEditable ? `<span class="drag-handle" style="cursor:grab;">⠿</span>` : '';
     const removeBtn = audioModalEditable ? `<button class="btn-icon btn-sm" onclick="removeAudioEntry(${i})">✕</button>` : '';
-    const displayName = entry.name.replace(/\.mp3$/i, '');
+    const displayName = entry.name.replace(/\.(mp3|m4a)$/i, '');
 
     // タグ情報の表示
     let tagHtml = '';
